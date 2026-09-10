@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Solar System</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene"></canvas>
+
+      <div id="loading">
+        <div class="loading-inner">
+          <div class="spinner"></div>
+          <div id="loading-text">Loading textures…</div>
+        </div>
+      </div>
+
+      <header id="hud-top">
+        <div id="title">Solar System</div>
+        <div id="top-actions">
+          <button id="btn-apod" class="pill-btn">Picture of the Day</button>
+          <button id="btn-live-earth" class="pill-btn">Live Earth Photo</button>
+        </div>
+      </header>
+
+      <aside id="info-panel" class="hidden">
+        <button id="info-close" aria-label="Close">×</button>
+        <h2 id="info-name"></h2>
+        <div id="info-type"></div>
+        <div class="info-stats" id="info-stats"></div>
+        <ul id="info-facts"></ul>
+      </aside>
+
+      <div id="nasa-panel" class="hidden">
+        <button id="nasa-close" aria-label="Close">×</button>
+        <h3 id="nasa-title"></h3>
+        <img id="nasa-image" alt="" />
+        <p id="nasa-caption"></p>
+      </div>
+
+      <footer id="hud-bottom">
+        <div class="control-group">
+          <button id="btn-play" class="icon-btn" title="Play/Pause">⏸</button>
+          <label class="control-label">Speed</label>
+          <input id="speed-slider" type="range" min="-3" max="3" step="0.1" value="1" />
+          <span id="speed-value">1×</span>
+        </div>
+        <div class="control-group toggles">
+          <label><input type="checkbox" id="toggle-orbits" checked /> Orbits</label>
+          <label><input type="checkbox" id="toggle-labels" checked /> Labels</label>
+          <label><input type="checkbox" id="toggle-true-scale" /> True scale</label>
+          <label><input type="checkbox" id="toggle-live-texture" /> Live satellite Earth</label>
+        </div>
+        <div class="control-group">
+          <button id="btn-reset-view" class="pill-btn">Reset View</button>
+        </div>
+      </footer>
+
+      <div id="labels-layer"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

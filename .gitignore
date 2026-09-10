@@ -1,0 +1,11 @@
+backend/.env
+backend/cache/
+backend/solarsystem-backend.exe
+backend/*.exe
+
+node_modules/
+frontend/dist/
+frontend/node_modules/
+
+.DS_Store
+Thumbs.db

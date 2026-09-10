@@ -1,0 +1,684 @@
+{
+  "bodies": [
+    {
+      "id": "sun",
+      "name": "Sun",
+      "type": "star",
+      "radiusKm": 696340,
+      "distanceFromSunAU": 0,
+      "orbitalPeriodDays": 0,
+      "rotationPeriodHours": 587,
+      "axialTiltDeg": 7.25,
+      "meanTempC": 5500,
+      "moonCount": 0,
+      "color": "#fdb813",
+      "facts": [
+        "Contains 99.86% of the mass in the entire solar system.",
+        "Surface (photosphere) temperature is about 5,500°C; the core reaches ~15 million °C.",
+        "Light from the Sun takes about 8 minutes 20 seconds to reach Earth."
+      ]
+    },
+    {
+      "id": "mercury",
+      "name": "Mercury",
+      "type": "planet",
+      "radiusKm": 2439.7,
+      "distanceFromSunAU": 0.387,
+      "orbitalEccentricity": 0.2056,
+      "orbitalInclinationDeg": 7.005,
+      "orbitalPeriodDays": 87.97,
+      "rotationPeriodHours": 1407.6,
+      "axialTiltDeg": 0.034,
+      "meanTempC": 167,
+      "moonCount": 0,
+      "color": "#9c9591",
+      "facts": [
+        "Smallest planet in the solar system, only slightly bigger than the Moon.",
+        "A day on Mercury (sunrise to sunrise) lasts 176 Earth days — longer than its year.",
+        "Temperatures swing from 430°C in sunlight to -180°C at night with no atmosphere to trap heat."
+      ]
+    },
+    {
+      "id": "venus",
+      "name": "Venus",
+      "type": "planet",
+      "radiusKm": 6051.8,
+      "distanceFromSunAU": 0.723,
+      "orbitalEccentricity": 0.0068,
+      "orbitalInclinationDeg": 3.395,
+      "orbitalPeriodDays": 224.7,
+      "rotationPeriodHours": -5832.5,
+      "axialTiltDeg": 177.4,
+      "meanTempC": 464,
+      "moonCount": 0,
+      "color": "#e8cda2",
+      "facts": [
+        "Hottest planet in the solar system due to a runaway greenhouse effect from its thick CO2 atmosphere.",
+        "Rotates backwards (retrograde) and so slowly that its day is longer than its year.",
+        "Surface pressure is 92x Earth's — like being 900m deep in Earth's ocean."
+      ]
+    },
+    {
+      "id": "earth",
+      "name": "Earth",
+      "type": "planet",
+      "radiusKm": 6371,
+      "distanceFromSunAU": 1,
+      "orbitalEccentricity": 0.0167,
+      "orbitalPeriodDays": 365.25,
+      "rotationPeriodHours": 23.93,
+      "axialTiltDeg": 23.44,
+      "meanTempC": 15,
+      "moonCount": 1,
+      "color": "#2a5fa5",
+      "facts": [
+        "The only known planet with liquid water on its surface and confirmed life.",
+        "71% of the surface is covered by ocean.",
+        "Its axial tilt of 23.44° is what causes the seasons."
+      ]
+    },
+    {
+      "id": "moon",
+      "name": "Moon",
+      "type": "moon",
+      "parent": "earth",
+      "radiusKm": 1737.4,
+      "distanceFromParentKm": 384400,
+      "orbitalEccentricity": 0.0549,
+      "orbitalInclinationDeg": 5.145,
+      "orbitalPeriodDays": 27.32,
+      "rotationPeriodHours": 655.7,
+      "axialTiltDeg": 6.68,
+      "meanTempC": -20,
+      "moonCount": 0,
+      "color": "#b9b6ae",
+      "facts": [
+        "Tidally locked to Earth — the same side always faces us.",
+        "Formed roughly 4.5 billion years ago, likely from debris after a Mars-sized body struck early Earth.",
+        "Slowly drifting away from Earth at about 3.8 cm per year."
+      ]
+    },
+    {
+      "id": "mars",
+      "name": "Mars",
+      "type": "planet",
+      "radiusKm": 3389.5,
+      "distanceFromSunAU": 1.524,
+      "orbitalEccentricity": 0.0934,
+      "orbitalInclinationDeg": 1.85,
+      "orbitalPeriodDays": 686.98,
+      "rotationPeriodHours": 24.62,
+      "axialTiltDeg": 25.19,
+      "meanTempC": -65,
+      "moonCount": 2,
+      "color": "#b7492b",
+      "facts": [
+        "Home to Olympus Mons, the largest volcano in the solar system (~22km tall).",
+        "Its red color comes from iron oxide (rust) covering the surface.",
+        "Has two small moons, Phobos and Deimos, likely captured asteroids."
+      ]
+    },
+    {
+      "id": "jupiter",
+      "name": "Jupiter",
+      "type": "planet",
+      "radiusKm": 69911,
+      "distanceFromSunAU": 5.204,
+      "orbitalEccentricity": 0.0484,
+      "orbitalInclinationDeg": 1.303,
+      "orbitalPeriodDays": 4332.59,
+      "rotationPeriodHours": 9.93,
+      "axialTiltDeg": 3.13,
+      "meanTempC": -110,
+      "moonCount": 95,
+      "color": "#c9a06a",
+      "facts": [
+        "Largest planet — more massive than all other planets combined.",
+        "The Great Red Spot is a storm larger than Earth that has raged for centuries.",
+        "Spins so fast (9.9-hour day) that it visibly bulges at the equator."
+      ]
+    },
+    {
+      "id": "saturn",
+      "name": "Saturn",
+      "type": "planet",
+      "radiusKm": 58232,
+      "distanceFromSunAU": 9.583,
+      "orbitalEccentricity": 0.0539,
+      "orbitalInclinationDeg": 2.485,
+      "orbitalPeriodDays": 10759.22,
+      "rotationPeriodHours": 10.7,
+      "axialTiltDeg": 26.73,
+      "meanTempC": -140,
+      "moonCount": 146,
+      "hasRings": true,
+      "color": "#e3cf9e",
+      "facts": [
+        "Its rings are made almost entirely of water ice, ranging from dust grains to boulder-sized chunks.",
+        "Least dense planet in the solar system — it would float in water if there were an ocean big enough.",
+        "Has 146 confirmed moons, more than any other planet."
+      ]
+    },
+    {
+      "id": "uranus",
+      "name": "Uranus",
+      "type": "planet",
+      "radiusKm": 25362,
+      "distanceFromSunAU": 19.191,
+      "orbitalEccentricity": 0.0473,
+      "orbitalInclinationDeg": 0.773,
+      "orbitalPeriodDays": 30688.5,
+      "rotationPeriodHours": -17.24,
+      "axialTiltDeg": 97.77,
+      "meanTempC": -195,
+      "moonCount": 28,
+      "hasRings": true,
+      "color": "#9fd6e0",
+      "facts": [
+        "Rotates almost entirely on its side, likely from an ancient massive collision.",
+        "Its faint rings were only discovered in 1977.",
+        "Coldest planetary atmosphere in the solar system despite not being the farthest from the Sun."
+      ]
+    },
+    {
+      "id": "neptune",
+      "name": "Neptune",
+      "type": "planet",
+      "radiusKm": 24622,
+      "distanceFromSunAU": 30.07,
+      "orbitalEccentricity": 0.0086,
+      "orbitalInclinationDeg": 1.77,
+      "orbitalPeriodDays": 60195,
+      "rotationPeriodHours": 16.11,
+      "axialTiltDeg": 28.32,
+      "meanTempC": -200,
+      "moonCount": 16,
+      "color": "#3f54ba",
+      "facts": [
+        "Has the fastest winds in the solar system, clocked over 2,100 km/h.",
+        "Takes 165 Earth years to orbit the Sun — it has only completed one orbit since its discovery in 1846.",
+        "Discovered by mathematical prediction before it was ever directly observed."
+      ]
+    },
+    {
+      "id": "phobos",
+      "name": "Phobos",
+      "type": "moon",
+      "parent": "mars",
+      "radiusKm": 11.1,
+      "distanceFromParentKm": 9376,
+      "orbitalEccentricity": 0.0151,
+      "orbitalInclinationDeg": 1.093,
+      "orbitalPeriodDays": 0.319,
+      "rotationPeriodHours": 7.66,
+      "axialTiltDeg": 0,
+      "meanTempC": -40,
+      "moonCount": 0,
+      "color": "#8a7a6d",
+      "facts": [
+        "Orbits Mars in just 7.66 hours — faster than Mars itself rotates, so it rises in the west and sets in the east.",
+        "Only 9,376 km from Mars's center, closer than any other moon is to its planet in the solar system.",
+        "Spiraling inward by about 2cm a year; will likely be torn apart by tidal forces or crash into Mars in ~30-50 million years."
+      ]
+    },
+    {
+      "id": "deimos",
+      "name": "Deimos",
+      "type": "moon",
+      "parent": "mars",
+      "radiusKm": 6.2,
+      "distanceFromParentKm": 23463,
+      "orbitalEccentricity": 0.00033,
+      "orbitalInclinationDeg": 1.08,
+      "orbitalPeriodDays": 1.263,
+      "rotationPeriodHours": 30.3,
+      "axialTiltDeg": 0,
+      "meanTempC": -40,
+      "moonCount": 0,
+      "color": "#9c9082",
+      "facts": [
+        "The smaller and outer of Mars's two moons, likely a captured asteroid.",
+        "So small and low-gravity that a rock dropped from your hand would take almost 10 minutes to hit the ground.",
+        "Named after the Greek personification of dread, twin of Phobos (fear)."
+      ]
+    },
+    {
+      "id": "io",
+      "name": "Io",
+      "type": "moon",
+      "parent": "jupiter",
+      "radiusKm": 1821.6,
+      "distanceFromParentKm": 421700,
+      "orbitalEccentricity": 0.0041,
+      "orbitalInclinationDeg": 0.05,
+      "orbitalPeriodDays": 1.769,
+      "rotationPeriodHours": 42.5,
+      "axialTiltDeg": 0,
+      "meanTempC": -130,
+      "moonCount": 0,
+      "color": "#e0d068",
+      "facts": [
+        "The most volcanically active body in the solar system, with hundreds of active volcanoes.",
+        "Squeezed by Jupiter's immense tidal gravity, which flexes its interior and generates the heat driving that volcanism.",
+        "One of the four Galilean moons discovered by Galileo Galilei in 1610."
+      ]
+    },
+    {
+      "id": "europa",
+      "name": "Europa",
+      "type": "moon",
+      "parent": "jupiter",
+      "radiusKm": 1560.8,
+      "distanceFromParentKm": 671034,
+      "orbitalEccentricity": 0.009,
+      "orbitalInclinationDeg": 0.47,
+      "orbitalPeriodDays": 3.551,
+      "rotationPeriodHours": 85.2,
+      "axialTiltDeg": 0.1,
+      "meanTempC": -160,
+      "moonCount": 0,
+      "color": "#d7c9a8",
+      "facts": [
+        "Its icy shell likely hides a liquid water ocean with more water than all of Earth's oceans combined.",
+        "One of the most promising places in the solar system to search for extraterrestrial life.",
+        "Has one of the smoothest surfaces of any known solid body, criss-crossed by long cracks."
+      ]
+    },
+    {
+      "id": "ganymede",
+      "name": "Ganymede",
+      "type": "moon",
+      "parent": "jupiter",
+      "radiusKm": 2634.1,
+      "distanceFromParentKm": 1070412,
+      "orbitalEccentricity": 0.0013,
+      "orbitalInclinationDeg": 0.2,
+      "orbitalPeriodDays": 7.155,
+      "rotationPeriodHours": 171.7,
+      "axialTiltDeg": 0.2,
+      "meanTempC": -160,
+      "moonCount": 0,
+      "color": "#a89c8a",
+      "facts": [
+        "The largest moon in the solar system — bigger than the planet Mercury.",
+        "The only moon known to generate its own magnetic field.",
+        "Believed to have a saltwater ocean sandwiched between layers of ice."
+      ]
+    },
+    {
+      "id": "callisto",
+      "name": "Callisto",
+      "type": "moon",
+      "parent": "jupiter",
+      "radiusKm": 2410.3,
+      "distanceFromParentKm": 1882709,
+      "orbitalEccentricity": 0.0074,
+      "orbitalInclinationDeg": 0.192,
+      "orbitalPeriodDays": 16.69,
+      "rotationPeriodHours": 400.5,
+      "axialTiltDeg": 0,
+      "meanTempC": -140,
+      "moonCount": 0,
+      "color": "#5e5348",
+      "facts": [
+        "The most heavily cratered object in the solar system, with a surface unchanged for billions of years.",
+        "Orbits far enough from Jupiter to receive much less radiation than the inner Galilean moons.",
+        "Likely has a small liquid saltwater layer deep beneath its icy crust."
+      ]
+    },
+    {
+      "id": "mimas",
+      "name": "Mimas",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 198.2,
+      "distanceFromParentKm": 185539,
+      "orbitalEccentricity": 0.0196,
+      "orbitalInclinationDeg": 1.574,
+      "orbitalPeriodDays": 0.942,
+      "rotationPeriodHours": 22.6,
+      "axialTiltDeg": 0,
+      "meanTempC": -200,
+      "moonCount": 0,
+      "color": "#c7c2b8",
+      "facts": [
+        "Its enormous Herschel crater, a third of Mimas's own diameter, gives it a striking resemblance to the Death Star.",
+        "The smallest astronomical body known to be rounded by its own gravity.",
+        "Orbits within Saturn's E ring, inside the planet's Roche limit for icy material."
+      ]
+    },
+    {
+      "id": "enceladus",
+      "name": "Enceladus",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 252.1,
+      "distanceFromParentKm": 238037,
+      "orbitalEccentricity": 0.0047,
+      "orbitalInclinationDeg": 0.009,
+      "orbitalPeriodDays": 1.37,
+      "rotationPeriodHours": 32.9,
+      "axialTiltDeg": 0,
+      "meanTempC": -200,
+      "moonCount": 0,
+      "color": "#f2f2f0",
+      "facts": [
+        "Geysers at its south pole blast water-ice plumes into space, feeding Saturn's E ring.",
+        "One of the most reflective objects in the solar system because its surface is almost pure ice.",
+        "Has a subsurface global ocean and is a leading candidate for hosting microbial life."
+      ]
+    },
+    {
+      "id": "tethys",
+      "name": "Tethys",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 531.1,
+      "distanceFromParentKm": 294672,
+      "orbitalEccentricity": 0.0001,
+      "orbitalInclinationDeg": 1.091,
+      "orbitalPeriodDays": 1.888,
+      "rotationPeriodHours": 45.3,
+      "axialTiltDeg": 0,
+      "meanTempC": -190,
+      "moonCount": 0,
+      "color": "#d6d2c8",
+      "facts": [
+        "Home to Ithaca Chasma, a canyon system stretching most of the way around the moon.",
+        "Made almost entirely of water ice, giving it a very low density.",
+        "Shares its orbit with two small Trojan moons, Telesto and Calypso."
+      ]
+    },
+    {
+      "id": "dione",
+      "name": "Dione",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 561.4,
+      "distanceFromParentKm": 377415,
+      "orbitalEccentricity": 0.0022,
+      "orbitalInclinationDeg": 0.028,
+      "orbitalPeriodDays": 2.737,
+      "rotationPeriodHours": 65.7,
+      "axialTiltDeg": 0,
+      "meanTempC": -190,
+      "moonCount": 0,
+      "color": "#c9c5bc",
+      "facts": [
+        "Bright wispy streaks on its trailing hemisphere turned out to be tectonic ice cliffs, not frost deposits as first thought.",
+        "Has faint, dusty rings of its own — the first found around a moon.",
+        "Denser than most other icy Saturnian moons, suggesting a larger rocky core."
+      ]
+    },
+    {
+      "id": "rhea",
+      "name": "Rhea",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 763.8,
+      "distanceFromParentKm": 527068,
+      "orbitalEccentricity": 0.001,
+      "orbitalInclinationDeg": 0.345,
+      "orbitalPeriodDays": 4.518,
+      "rotationPeriodHours": 108.4,
+      "axialTiltDeg": 0,
+      "meanTempC": -175,
+      "moonCount": 0,
+      "color": "#bdb9b0",
+      "facts": [
+        "Saturn's second-largest moon, made mostly of water ice with a small rocky core.",
+        "May have a thin oxygen and carbon dioxide atmosphere, extremely rare for a moon.",
+        "Once suspected to have its own ring system, though later observations found no direct evidence."
+      ]
+    },
+    {
+      "id": "titan",
+      "name": "Titan",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 2574.7,
+      "distanceFromParentKm": 1221870,
+      "orbitalEccentricity": 0.0288,
+      "orbitalInclinationDeg": 0.348,
+      "orbitalPeriodDays": 15.945,
+      "rotationPeriodHours": 382.7,
+      "axialTiltDeg": 0.3,
+      "meanTempC": -179,
+      "moonCount": 0,
+      "color": "#e0a952",
+      "facts": [
+        "The only moon in the solar system with a substantial atmosphere, thicker than Earth's.",
+        "Has stable lakes and rivers of liquid methane and ethane on its surface — the only other body known to have liquid on its surface.",
+        "Larger than the planet Mercury, and the second-largest moon in the solar system after Ganymede."
+      ]
+    },
+    {
+      "id": "iapetus",
+      "name": "Iapetus",
+      "type": "moon",
+      "parent": "saturn",
+      "radiusKm": 734.5,
+      "distanceFromParentKm": 3560820,
+      "orbitalEccentricity": 0.0286,
+      "orbitalInclinationDeg": 15.47,
+      "orbitalPeriodDays": 79.32,
+      "rotationPeriodHours": 1903.7,
+      "axialTiltDeg": 0,
+      "meanTempC": -180,
+      "moonCount": 0,
+      "color": "#8a7d6a",
+      "facts": [
+        "Famously two-toned: one hemisphere is as dark as coal, the other as bright as snow.",
+        "Has a strange equatorial ridge up to 20km high, giving it a walnut-like shape.",
+        "Orbits much farther from Saturn than its other major moons, tilted 15° from Saturn's equatorial plane."
+      ]
+    },
+    {
+      "id": "miranda",
+      "name": "Miranda",
+      "type": "moon",
+      "parent": "uranus",
+      "radiusKm": 235.8,
+      "distanceFromParentKm": 129390,
+      "orbitalEccentricity": 0.0013,
+      "orbitalInclinationDeg": 4.232,
+      "orbitalPeriodDays": 1.413,
+      "rotationPeriodHours": 33.9,
+      "axialTiltDeg": 0,
+      "meanTempC": -213,
+      "moonCount": 0,
+      "color": "#a7a39c",
+      "facts": [
+        "Has some of the tallest known cliffs in the solar system, including Verona Rupes at up to 20km high.",
+        "Its jumbled, patchwork surface suggests it may have been shattered and reassembled by an ancient impact.",
+        "The innermost and smallest of Uranus's five major moons."
+      ]
+    },
+    {
+      "id": "ariel",
+      "name": "Ariel",
+      "type": "moon",
+      "parent": "uranus",
+      "radiusKm": 578.9,
+      "distanceFromParentKm": 190900,
+      "orbitalEccentricity": 0.0012,
+      "orbitalInclinationDeg": 0.04,
+      "orbitalPeriodDays": 2.52,
+      "rotationPeriodHours": 60.5,
+      "axialTiltDeg": 0,
+      "meanTempC": -213,
+      "moonCount": 0,
+      "color": "#b7b3ac",
+      "facts": [
+        "The brightest of Uranus's major moons, with a relatively young, lightly cratered surface.",
+        "Criss-crossed by deep canyons far larger than anything similar on Earth relative to its size.",
+        "Named after a spirit in Alexander Pope's poem 'The Rape of the Lock', continuing Uranus's literary naming theme."
+      ]
+    },
+    {
+      "id": "umbriel",
+      "name": "Umbriel",
+      "type": "moon",
+      "parent": "uranus",
+      "radiusKm": 584.7,
+      "distanceFromParentKm": 266000,
+      "orbitalEccentricity": 0.0039,
+      "orbitalInclinationDeg": 0.13,
+      "orbitalPeriodDays": 4.144,
+      "rotationPeriodHours": 99.5,
+      "axialTiltDeg": 0,
+      "meanTempC": -213,
+      "moonCount": 0,
+      "color": "#6b665f",
+      "facts": [
+        "The darkest of Uranus's major moons, reflecting only about 16% of the sunlight that hits it.",
+        "Features a mysterious bright ring-shaped feature nicknamed 'the fluorescent Cheerio'.",
+        "Named after a dusky spirit from 'The Rape of the Lock', fitting its dark surface."
+      ]
+    },
+    {
+      "id": "titania",
+      "name": "Titania",
+      "type": "moon",
+      "parent": "uranus",
+      "radiusKm": 788.4,
+      "distanceFromParentKm": 436300,
+      "orbitalEccentricity": 0.0011,
+      "orbitalInclinationDeg": 0.08,
+      "orbitalPeriodDays": 8.706,
+      "rotationPeriodHours": 208.9,
+      "axialTiltDeg": 0,
+      "meanTempC": -213,
+      "moonCount": 0,
+      "color": "#b0aca4",
+      "facts": [
+        "The largest moon of Uranus, with a surface scarred by huge canyons and fault valleys.",
+        "May harbor a thin layer of liquid water between its icy mantle and rocky core.",
+        "Named after the queen of the fairies in Shakespeare's 'A Midsummer Night's Dream'."
+      ]
+    },
+    {
+      "id": "oberon",
+      "name": "Oberon",
+      "type": "moon",
+      "parent": "uranus",
+      "radiusKm": 761.4,
+      "distanceFromParentKm": 583500,
+      "orbitalEccentricity": 0.0014,
+      "orbitalInclinationDeg": 0.07,
+      "orbitalPeriodDays": 13.463,
+      "rotationPeriodHours": 323.1,
+      "axialTiltDeg": 0,
+      "meanTempC": -213,
+      "moonCount": 0,
+      "color": "#948f88",
+      "facts": [
+        "The outermost of Uranus's five major moons, heavily cratered with a reddish tint on its trailing hemisphere.",
+        "Has a mountain near its south pole rising about 11km high, visible on its horizon in Voyager 2 images.",
+        "Named after the king of the fairies, opposite Titania, in Shakespeare's 'A Midsummer Night's Dream'."
+      ]
+    },
+    {
+      "id": "triton",
+      "name": "Triton",
+      "type": "moon",
+      "parent": "neptune",
+      "radiusKm": 1353.4,
+      "distanceFromParentKm": 354759,
+      "orbitalEccentricity": 0.00002,
+      "orbitalInclinationDeg": 23,
+      "orbitalPeriodDays": 5.877,
+      "rotationPeriodHours": 141.0,
+      "axialTiltDeg": 0,
+      "retrograde": true,
+      "meanTempC": -235,
+      "moonCount": 0,
+      "color": "#d9c9b8",
+      "facts": [
+        "The only large moon in the solar system that orbits its planet backwards (retrograde), suggesting it's a captured Kuiper Belt object.",
+        "Has active nitrogen geysers, making it one of the few geologically active moons.",
+        "Its retrograde orbit is slowly decaying — in a few billion years, tidal forces will tear it apart, likely forming a ring around Neptune."
+      ]
+    },
+    {
+      "id": "ceres",
+      "name": "Ceres",
+      "type": "dwarfPlanet",
+      "radiusKm": 469.7,
+      "distanceFromSunAU": 2.766,
+      "orbitalEccentricity": 0.0758,
+      "orbitalInclinationDeg": 10.59,
+      "orbitalPeriodDays": 1682,
+      "rotationPeriodHours": 9.07,
+      "axialTiltDeg": 4,
+      "meanTempC": -105,
+      "moonCount": 0,
+      "color": "#a8a29a",
+      "facts": [
+        "The largest object in the asteroid belt and the only dwarf planet located in the inner solar system.",
+        "Contains roughly a third of the asteroid belt's total mass, despite being just under 950km across.",
+        "NASA's Dawn spacecraft found bright salt deposits and evidence of a subsurface ocean of brine."
+      ]
+    },
+    {
+      "id": "pluto",
+      "name": "Pluto",
+      "type": "dwarfPlanet",
+      "radiusKm": 1188.3,
+      "distanceFromSunAU": 39.48,
+      "orbitalEccentricity": 0.2488,
+      "orbitalPeriodDays": 90560,
+      "rotationPeriodHours": -153.3,
+      "axialTiltDeg": 122.5,
+      "orbitalInclinationDeg": 17.16,
+      "meanTempC": -225,
+      "moonCount": 5,
+      "color": "#c9b8a3",
+      "facts": [
+        "Reclassified from the ninth planet to a dwarf planet in 2006 after the discovery of similarly-sized Kuiper Belt objects.",
+        "Its orbit is so eccentric and tilted that it was closer to the Sun than Neptune from 1979 to 1999.",
+        "Its largest moon, Charon, is more than half Pluto's size — the two are sometimes called a double dwarf planet."
+      ]
+    },
+    {
+      "id": "halley",
+      "name": "Halley's Comet",
+      "type": "comet",
+      "radiusKm": 5.5,
+      "distanceFromSunAU": 17.834,
+      "orbitalEccentricity": 0.967,
+      "orbitalPeriodDays": 27759,
+      "orbitalInclinationDeg": 162.26,
+      "rotationPeriodHours": 52.8,
+      "axialTiltDeg": 0,
+      "meanTempC": -100,
+      "moonCount": 0,
+      "color": "#3a3a3a",
+      "facts": [
+        "The most famous comet, visible from Earth roughly every 76 years — last seen in 1986, due back in 2061.",
+        "Its 162° orbital inclination means it travels retrograde and steeply tilted relative to the planets.",
+        "Its glowing tail always points away from the Sun, pushed back by solar wind and radiation pressure — not trailing behind its motion."
+      ]
+    },
+    {
+      "id": "encke",
+      "name": "Comet Encke",
+      "type": "comet",
+      "radiusKm": 2.4,
+      "distanceFromSunAU": 2.215,
+      "orbitalEccentricity": 0.8484,
+      "orbitalPeriodDays": 1204,
+      "orbitalInclinationDeg": 11.78,
+      "rotationPeriodHours": 15.1,
+      "axialTiltDeg": 0,
+      "meanTempC": -80,
+      "moonCount": 0,
+      "color": "#4a4640",
+      "facts": [
+        "Has the shortest orbital period of any known comet — just 3.3 years.",
+        "Its frequent close solar passes have boiled away its surface ices, giving it one of the darkest surfaces of any comet.",
+        "The Taurid meteor showers on Earth are debris shed from Encke's orbital trail."
+      ]
+    }
+  ]
+}
