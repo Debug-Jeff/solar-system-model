@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: solar-system-backend
+    runtime: go
+    rootDir: backend
+    buildCommand: go build -o app .
+    startCommand: ./app
+    envVars:
+      - key: NASA_API_KEY
+        sync: false

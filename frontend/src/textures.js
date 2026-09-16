@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { API_BASE } from './api.js'
 
 // A single shared LoadingManager lets every texture load in this app
 // drive the same #loading overlay, without each caller having to track
@@ -73,7 +74,7 @@ export const textures = {
 export function loadLiveEarthTexture() {
   return new Promise((resolve, reject) => {
     loader.load(
-      '/api/gibs/earth-texture',
+      API_BASE + '/api/gibs/earth-texture',
       (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace
         resolve(tex)

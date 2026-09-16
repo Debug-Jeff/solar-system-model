@@ -1,8 +1,11 @@
-// Thin wrappers around our Go backend's API. All requests are relative
-// (/api/...) so they work both through the Vite dev proxy and once built
-// and served behind the same origin as the backend.
+// Thin wrappers around our Go backend's API. Requests are relative
+// (/api/...) by default so they work through the Vite dev proxy; set
+// VITE_API_BASE_URL when the backend is deployed separately from the
+// frontend (e.g. frontend on Vercel, backend on Render/Fly.io).
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
-async function getJSON(url) {
+async function getJSON(path) {
+  const url = API_BASE + path
   const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`${url} responded ${res.status}`)
@@ -23,5 +26,9 @@ export function fetchApod() {
 export async function fetchLatestEpic() {
   const items = await getJSON('/api/epic')
   if (!items.length) throw new Error('no EPIC imagery available')
-  return items[items.length - 1]
+  const item = items[items.length - 1]
+  // imageUrl comes back as a backend-relative path (e.g. /api/epic/image?...)
+  // and is used directly as an <img src>, so it needs the same base the
+  // frontend's other API calls use when the backend lives on another origin.
+  return { ...item, imageUrl: API_BASE + item.imageUrl }
 }
