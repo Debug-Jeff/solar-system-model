@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { injectSpeedInsights } from '@vercel/speed-insights'
 import { createScene, INITIAL_CAMERA_POSITION } from './scene.js'
 import { createBodies } from './bodies.js'
 import { createSmallBodyBelt } from './smallBodies.js'
@@ -128,6 +129,8 @@ async function main() {
   }
   tick()
 }
+
+injectSpeedInsights()
 
 main().catch((err) => {
   console.error('Failed to start solar system:', err)
