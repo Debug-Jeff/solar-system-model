@@ -7,7 +7,8 @@ import { createFollowController } from './follow'
 import { AU_KM } from './frames'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer } from './markers'
-import { createScene, DEFAULT_MIN_DISTANCE_KM, INITIAL_CAMERA_POSITION } from './scene'
+import { clampOutsideSphere } from './pathFix'
+import { createScene, INITIAL_CAMERA_POSITION } from './scene'
 import { createSmallBodyBelt, type BeltOptions } from './smallBodies'
 import { createTapDetector } from './tap'
 import { createTextures, loadLiveEarthTexture } from './textures'
@@ -18,7 +19,8 @@ const BELTS: BeltOptions[] = [
 ]
 
 const SECONDS_PER_HOUR = 3600
-const FOLLOW_MIN_DISTANCE_RADII = 1.2
+const SURFACE_CLEARANCE = 1.1
+const SUN_CENTER = new THREE.Vector3()
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement
@@ -52,13 +54,20 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
   function startFollowing(id: string): void {
     const entry = bodies.byId.get(id)
     if (!entry) return
-    controls.minDistance = entry.radiusKm * FOLLOW_MIN_DISTANCE_RADII
+    controls.zoomToCursor = false
     follow.start(flyToDistance(entry.radiusKm), performance.now())
   }
 
   function stopFollowing(): void {
     follow.stop()
-    controls.minDistance = DEFAULT_MIN_DISTANCE_KM
+    controls.zoomToCursor = true
+  }
+
+  function keepOutsideBodies(followId: string | null): void {
+    const sun = bodies.byId.get('sun')
+    if (sun) clampOutsideSphere(camera.position, SUN_CENTER, sun.radiusKm * SURFACE_CLEARANCE)
+    const followed = followId ? bodies.byId.get(followId) : undefined
+    if (followed) clampOutsideSphere(camera.position, followTarget, followed.radiusKm * SURFACE_CLEARANCE)
   }
 
   function applyState(state: AppState, prev: AppState | null): void {
@@ -103,14 +112,20 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
 
   const taps = createTapDetector()
   const sample = (e: PointerEvent) => ({ pointerId: e.pointerId, x: e.clientX, y: e.clientY })
+  const inputRoot = canvas.parentElement ?? canvas
   const onPointerDown = (e: PointerEvent) => taps.down(sample(e))
   const onPointerUp = (e: PointerEvent) => {
-    if (taps.up(sample(e))) store.getState().select(pickBody(e.clientX, e.clientY))
+    if (taps.up(sample(e)) && e.target === canvas) store.getState().select(pickBody(e.clientX, e.clientY))
   }
   const onPointerCancel = (e: PointerEvent) => taps.cancel(e.pointerId)
-  canvas.addEventListener('pointerdown', onPointerDown)
-  canvas.addEventListener('pointerup', onPointerUp)
-  canvas.addEventListener('pointercancel', onPointerCancel)
+  const forwardWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    canvas.dispatchEvent(new WheelEvent('wheel', e))
+  }
+  inputRoot.addEventListener('pointerdown', onPointerDown, true)
+  inputRoot.addEventListener('pointerup', onPointerUp, true)
+  inputRoot.addEventListener('pointercancel', onPointerCancel, true)
+  labelsLayer.addEventListener('wheel', forwardWheel, { passive: false })
 
   let wasLiveWhenHidden = false
   const onVisibility = () => {
@@ -137,6 +152,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
 
     if (state.followId) follow.update(bodies.getBodyWorldPos(state.followId, followTarget), performance.now())
     controls.update()
+    keepOutsideBodies(state.followId)
     camera.updateMatrixWorld()
     starfield.position.copy(camera.position)
 
@@ -153,9 +169,10 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       disposed = true
       cancelAnimationFrame(frame)
       unsubscribe()
-      canvas.removeEventListener('pointerdown', onPointerDown)
-      canvas.removeEventListener('pointerup', onPointerUp)
-      canvas.removeEventListener('pointercancel', onPointerCancel)
+      inputRoot.removeEventListener('pointerdown', onPointerDown, true)
+      inputRoot.removeEventListener('pointerup', onPointerUp, true)
+      inputRoot.removeEventListener('pointercancel', onPointerCancel, true)
+      labelsLayer.removeEventListener('wheel', forwardWheel)
       document.removeEventListener('visibilitychange', onVisibility)
       timer.dispose()
       liveTexture.dispose()

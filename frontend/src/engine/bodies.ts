@@ -5,6 +5,7 @@ import { eclipticKmToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
 import { ORBIT_OPACITY, orbitColor, relativePositions } from './orbitStyle'
 import { moonVisible, type MarkerEntry } from './markers'
+import { insertOnPath } from './pathFix'
 import { projectedRadiusPx } from './projection'
 import type { Textures } from './textures'
 
@@ -209,11 +210,11 @@ function updateCometTail(entry: BodyEntry): void {
   posAttr.needsUpdate = true
 }
 
-function writeOrbitBuffer(entry: BodyEntry, origin: THREE.Vector3): void {
+function writeOrbitBuffer(entry: BodyEntry, origin: THREE.Vector3, points: readonly THREE.Vector3[] = entry.orbitPoints): void {
   if (!entry.orbitLine) return
   entry.orbitOrigin.copy(origin)
   entry.orbitLine.position.copy(origin)
-  const array = relativePositions(entry.orbitPoints, origin)
+  const array = relativePositions(points, origin)
   const attr = entry.orbitLine.geometry.getAttribute('position') as THREE.BufferAttribute | undefined
   if (attr && attr.array.length === array.length) {
     ;(attr.array as Float32Array).set(array)
@@ -415,7 +416,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       if (!visible || !entry.ephemerisId) continue
       entry.pivot.getWorldPosition(_worldPos)
       const near = camera.position.distanceTo(_worldPos) < ORBIT_LOCAL_FRACTION * _worldPos.length()
-      if (near) writeOrbitBuffer(entry, _worldPos)
+      if (near) writeOrbitBuffer(entry, _worldPos, insertOnPath(entry.orbitPoints, _worldPos))
       else if (entry.orbitOrigin.lengthSq() !== 0) writeOrbitBuffer(entry, new THREE.Vector3())
     }
   }
