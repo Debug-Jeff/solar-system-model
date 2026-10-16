@@ -118,3 +118,14 @@ export function parseSmallBodies(raw: unknown): SmallBodiesData {
     belts: { main: parseBelt(belts.main, 'main'), kuiper: parseBelt(belts.kuiper, 'kuiper') },
   }
 }
+
+export async function loadSmallBodies(fetchFn: typeof fetch = fetch): Promise<SmallBodiesData | null> {
+  try {
+    const res = await fetchFn('/data/smallbodies.json')
+    if (!res.ok) throw new Error(`responded ${res.status}`)
+    return parseSmallBodies(await res.json())
+  } catch (err) {
+    console.warn('small bodies unavailable', err)
+    return null
+  }
+}

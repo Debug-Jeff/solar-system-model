@@ -377,7 +377,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
 
   const sun = planetsData.find((b) => b.type === 'star')
   if (!sun) throw new Error('planet data has no star')
-  const primaries = planetsData.filter((b) => b.type === 'planet' || b.type === 'dwarfPlanet' || b.type === 'comet')
+  const primaries = planetsData.filter((b) => b.type === 'planet' || b.type === 'dwarfPlanet' || b.type === 'comet' || b.type === 'asteroid')
   const moons = planetsData.filter((b) => b.type === 'moon')
 
   makeEntry(sun, null, 0)
