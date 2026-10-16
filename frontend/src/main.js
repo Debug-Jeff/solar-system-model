@@ -30,7 +30,8 @@ async function main() {
   const originalEarthDayMap = bodies.earthMaterial.map
 
   const state = { speed: 1 }
-  const clock = new THREE.Clock()
+  const timer = new THREE.Timer()
+  timer.connect(document)
   const raycaster = new THREE.Raycaster()
   const pointerNDC = new THREE.Vector2()
   let pointerDownAt = null
@@ -105,9 +106,10 @@ async function main() {
     }
   })
 
-  function tick() {
+  function tick(timestamp) {
     requestAnimationFrame(tick)
-    const delta = clock.getDelta()
+    timer.update(timestamp)
+    const delta = timer.getDelta()
     const deltaSimHours = delta * state.speed * BASE_SIM_HOURS_PER_SECOND
 
     bodies.updateFrame(deltaSimHours)
