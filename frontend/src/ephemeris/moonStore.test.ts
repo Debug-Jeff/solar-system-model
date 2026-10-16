@@ -62,3 +62,11 @@ test('moonSetFor maps planets to their sets', () => {
   expect(moonSetFor('pluto')).toBe('moons-pluto')
   expect(moonSetFor('mercury')).toBeNull()
 })
+
+test('an older set never replaces a newer one (backend answers before the static file)', () => {
+  const newer = { ...set, generatedAtMs: set.generatedAtMs + 86_400_000 }
+  const older = { ...set, generatedAtMs: set.generatedAtMs, bodies: { moon: { ...track, startMs: track.startMs + 1e12 } } }
+  registerSet(newer)
+  registerSet(older)
+  expect(moonPosition('moon', inside)).not.toBeNull()
+})

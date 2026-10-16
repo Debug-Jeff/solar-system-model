@@ -27,6 +27,8 @@ export function moonSetFor(parentId: string): string | null {
 }
 
 export function registerSet(set: EphemSet): void {
+  const current = sets.get(set.set)
+  if (current && set.generatedAtMs < current.generatedAtMs) return
   sets.set(set.set, set)
   rebuildIndex()
   for (const listener of listeners) listener(set.set)
