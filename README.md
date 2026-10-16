@@ -23,6 +23,8 @@ npm run dev
 
 Open http://localhost:5173. On Windows, `./start.ps1` starts both.
 
+Moon positions come from JPL Horizons. The backend serves them at `/api/ephem/{set}`, and a daily GitHub Action refreshes the static copies in `frontend/public/data/ephem`.
+
 ## Tests
 
 ```sh
