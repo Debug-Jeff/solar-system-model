@@ -11,6 +11,7 @@ export const LIVE_TOLERANCE_MS = 2000
 export type NasaPanelContent = { title: string; imageUrl: string; caption: string }
 
 export interface AppState {
+  clock: () => number
   bodies: Body[]
   simTimeMs: number
   rate: number
@@ -74,6 +75,7 @@ function stepRate(rate: number, direction: 1 | -1): number {
 
 export function createAppStore(nowMs: () => number = Date.now): AppStore {
   return createStore<AppState & AppActions>()((set, get) => ({
+    clock: nowMs,
     bodies: [],
     simTimeMs: nowMs(),
     rate: 1,

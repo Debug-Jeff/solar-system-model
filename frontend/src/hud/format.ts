@@ -37,6 +37,33 @@ export function formatSimDate(ms: number): string {
   return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`
 }
 
+export interface LocalDateTime {
+  date: string
+  time: string
+  zone: string
+}
+
+export function localDateTime(ms: number, timeZone?: string): LocalDateTime {
+  const d = new Date(ms)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+    timeZoneName: 'short',
+  }).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? ''
+  return {
+    date: `${get('month')} ${get('day')}, ${get('year')}`,
+    time: `${get('hour')}:${get('minute')}:${get('second')}`,
+    zone: get('timeZoneName'),
+  }
+}
+
 export function toIsoDate(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10)
 }
