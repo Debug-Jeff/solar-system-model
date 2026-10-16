@@ -29,3 +29,5 @@ Open http://localhost:5173. On Windows, `./start.ps1` starts both.
 cd backend && go test ./...
 cd frontend && npm test
 ```
+
+Third-party libraries, data and imagery are listed in [CREDITS.md](CREDITS.md).
