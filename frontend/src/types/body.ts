@@ -1,4 +1,4 @@
-export const BODY_TYPES = ['star', 'planet', 'dwarfPlanet', 'moon', 'comet'] as const
+export const BODY_TYPES = ['star', 'planet', 'dwarfPlanet', 'moon', 'comet', 'asteroid'] as const
 
 export type BodyType = (typeof BODY_TYPES)[number]
 
@@ -20,6 +20,7 @@ export interface Body {
   color?: string
   retrograde?: boolean
   hasRings?: boolean
+  neo?: { approachMs: number; missKm: number; speedKmS: number; hazardous: boolean }
   facts: string[]
 }
 

@@ -12,6 +12,7 @@ export function formatPeriod(days: number, locale?: string): string {
 }
 
 export function formatRotation(hours: number, locale?: string): string {
+  if (!Number.isFinite(hours) || hours === 0) return '—'
   const magnitude = Math.abs(hours)
   const label =
     magnitude >= 48 ? `${formatNumber(magnitude / 24, 2, locale)} days` : `${formatNumber(magnitude, 1, locale)} hr`
@@ -22,6 +23,10 @@ export function formatDistance(body: Body, locale?: string): string {
   if (body.type === 'star') return '—'
   if (body.type === 'moon') return `${formatNumber(body.distanceFromParentKm ?? 0, 0, locale)} km`
   return `${formatNumber(body.distanceFromSunAU ?? 0, 3, locale)} AU`
+}
+
+export function formatTemp(celsius: number, locale?: string): string {
+  return Number.isFinite(celsius) ? `${formatNumber(celsius, 0, locale)}°C` : '—'
 }
 
 export function formatType(type: string): string {

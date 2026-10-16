@@ -31,3 +31,17 @@ test.each([
   const row = screen.getByText('Position').parentElement!
   expect(row).toHaveTextContent(label)
 })
+
+test('a near-Earth object shows its close approach', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 16))
+  store.getState().setBodies([
+    { ...base, id: 'neo-1', name: '(2017 UX7)', type: 'asteroid', radiusKm: 0.01, rotationPeriodHours: 0, meanTempC: Number.NaN, neo: { approachMs: Date.UTC(2026, 9, 22, 17, 8), missKm: 6_500_634, speedKmS: 5.69, hazardous: false } },
+  ])
+  store.getState().select('neo-1')
+  render(<InfoPanel store={store} />)
+  expect(screen.getByText('Closest approach').parentElement).toHaveTextContent('Oct 22, 2026')
+  expect(screen.getByText('Miss distance').parentElement).toHaveTextContent('6,500,634 km')
+  expect(screen.getByText('Speed').parentElement).toHaveTextContent('5.69 km/s')
+  expect(screen.getByText('Rotation').parentElement).toHaveTextContent('—')
+  expect(screen.getByText('Mean temp').parentElement).toHaveTextContent('—')
+})

@@ -24,6 +24,8 @@ export function orbitColor(body: Body, parent: Body | null): OrbitColor {
   switch (body.type) {
     case 'comet':
       return { color: COMET_ORBIT_COLOR, opacity: ORBIT_OPACITY.normal }
+    case 'asteroid':
+      return { color: ASTEROID_ORBIT_COLOR, opacity: ORBIT_OPACITY.normal }
     case 'dwarfPlanet':
       return { color: withLightness(own, DWARF_LIGHTNESS), opacity: ORBIT_OPACITY.normal }
     case 'moon':

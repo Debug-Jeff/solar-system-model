@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { fetchPlanets } from './api/client'
 import { startApp } from './bootstrap'
 import { createEngine } from './engine/engine'
+import { loadSmallBodies } from './ephemeris/smallBodies'
 import { App } from './hud/App'
 import './hud/style.css'
 import { createAppStore } from './state/store'
@@ -31,6 +32,7 @@ createRoot(requireElement('hud-root', HTMLDivElement)).render(
 void startApp({
   store,
   fetchPlanets,
+  fetchSmallBodies: () => loadSmallBodies(),
   createEngine: (s) => createEngine({ canvas, labelsLayer, store: s }),
   isDev: import.meta.env.DEV,
 })
