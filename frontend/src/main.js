@@ -123,6 +123,7 @@ injectSpeedInsights()
 
 main().catch((err) => {
   console.error('Failed to start solar system:', err)
-  document.getElementById('loading-text').textContent =
-    'Failed to load — is the backend running on :8080?'
+  document.getElementById('loading-text').textContent = import.meta.env.DEV
+    ? 'Failed to load — is the backend running on :8080?'
+    : 'Failed to load the solar system. Please try again later.'
 })

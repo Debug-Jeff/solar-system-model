@@ -21,8 +21,23 @@ function formatDistance(body) {
   return `${formatNumber(body.distanceFromSunAU, 3)} AU`
 }
 
+function span(className, text) {
+  const node = document.createElement('span')
+  node.className = className
+  node.textContent = text
+  return node
+}
+
 function buildStatRow(label, value) {
-  return `<div><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`
+  const row = document.createElement('div')
+  row.append(span('stat-label', label), span('stat-value', value))
+  return row
+}
+
+function buildFact(text) {
+  const item = document.createElement('li')
+  item.textContent = text
+  return item
 }
 
 function formatType(type) {
@@ -32,16 +47,16 @@ function formatType(type) {
 function renderInfoPanel(body) {
   el('info-name').textContent = body.name
   el('info-type').textContent = formatType(body.type)
-  el('info-stats').innerHTML = [
+  el('info-stats').replaceChildren(
     buildStatRow('Radius', `${formatNumber(body.radiusKm)} km`),
     buildStatRow('Distance', formatDistance(body)),
     buildStatRow('Orbital period', body.type === 'star' ? '—' : formatPeriod(body.orbitalPeriodDays)),
     buildStatRow('Rotation', formatRotation(body.rotationPeriodHours)),
     buildStatRow('Axial tilt', `${formatNumber(body.axialTiltDeg, 1)}°`),
     buildStatRow('Mean temp', `${formatNumber(body.meanTempC)}°C`),
-    buildStatRow('Moons', formatNumber(body.moonCount)),
-  ].join('')
-  el('info-facts').innerHTML = body.facts.map((f) => `<li>${f}</li>`).join('')
+    buildStatRow('Moons', formatNumber(body.moonCount))
+  )
+  el('info-facts').replaceChildren(...body.facts.map(buildFact))
   el('info-panel').classList.remove('hidden')
 }
 
