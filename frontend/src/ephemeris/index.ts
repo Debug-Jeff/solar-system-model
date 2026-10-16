@@ -1,5 +1,5 @@
 import rawElements from './data/smallBodyElements.json'
-import { elementsPosition, periodDays, validateElements } from './kepler'
+import { elementsOrbitPoints, elementsPosition, periodDays, validateElements } from './kepler'
 import { PLANET_PERIOD_DAYS, planetPosition } from './planets'
 import {
   KEPLER_IDS,
@@ -50,6 +50,7 @@ export function orbitPeriodDays(id: EphemerisId): number {
 }
 
 export function orbitPath(id: EphemerisId, utcMs: number, segments = 360): Vec3[] {
+  if (!isPlanet(id)) return elementsOrbitPoints(ELEMENTS[id], segments)
   const periodMs = orbitPeriodDays(id) * MS_PER_DAY
   const start = utcMs - periodMs / 2
   const points: Vec3[] = []
@@ -61,7 +62,7 @@ export function orbitPath(id: EphemerisId, utcMs: number, segments = 360): Vec3[
 
 export function availability(id: string, utcMs: number): Availability {
   if (utcMs < MIN_EPHEMERIS_MS || utcMs > MAX_EPHEMERIS_MS) return 'approximate'
-  if (isPlanet(id)) return 'exact'
+  if (id === 'sun' || isPlanet(id)) return 'exact'
   if (id === 'ceres') {
     return Math.abs(msToJd(utcMs) - ELEMENTS.ceres.epochJd) <= CERES_EXACT_WINDOW_DAYS ? 'exact' : 'approximate'
   }

@@ -6,7 +6,7 @@ export function InfoPanel({ store }: StoreProps) {
   const body = useAppStore(store, (s) => s.bodies.find((b) => b.id === s.selectedId) ?? null)
   const select = useAppStore(store, (s) => s.select)
   const position = useAppStore(store, (s) =>
-    s.selectedId ? (availability(s.selectedId, s.simTimeMs) === 'exact' ? 'Live' : 'Approximate') : null
+    s.selectedId ? (availability(s.selectedId, s.simTimeMs) === 'exact' ? 'Accurate' : 'Approximate') : null
   )
 
   const stats: [string, string][] = body
