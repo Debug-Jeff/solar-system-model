@@ -16,6 +16,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"solarsystem/backend/internal/diskcache"
+	"solarsystem/backend/internal/ephem"
 	"solarsystem/backend/internal/nasa"
 )
 
@@ -59,6 +60,7 @@ type Deps struct {
 	Nasa        *nasa.Client
 	Cache       *diskcache.Cache
 	PlanetsJSON []byte
+	Horizons    ephem.VectorSource
 	Now         func() time.Time
 
 	group    singleflight.Group
