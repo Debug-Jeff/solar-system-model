@@ -37,7 +37,7 @@ export function createSmallBodyBelt(scene: THREE.Scene, { innerAU, outerAU, coun
   const material = new THREE.PointsMaterial({
     color,
     size,
-    sizeAttenuation: true,
+    sizeAttenuation: false,
     transparent: true,
     opacity: 0.75,
     depthWrite: false,

@@ -2,21 +2,23 @@ import * as THREE from 'three'
 import { API_BASE } from '../api/client'
 import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
+import { flyToDistance } from './flyTo'
 import { createFollowController } from './follow'
-import { createLabelManager } from './labels'
+import { AU_KM } from './frames'
 import { createLiveTextureSwitch } from './liveTexture'
-import { isClick, pickBody, type ScreenPoint } from './picking'
-import { orbitVisualDistance } from './scale'
-import { createScene, INITIAL_CAMERA_POSITION } from './scene'
+import { createMarkerLayer } from './markers'
+import { createScene, DEFAULT_MIN_DISTANCE_KM, INITIAL_CAMERA_POSITION } from './scene'
 import { createSmallBodyBelt, type BeltOptions } from './smallBodies'
+import { createTapDetector } from './tap'
 import { createTextures, loadLiveEarthTexture } from './textures'
 
 const BELTS: BeltOptions[] = [
-  { innerAU: 2.1, outerAU: 3.3, count: 2500, color: 0x9c9284, size: 0.35 },
-  { innerAU: 30, outerAU: 50, count: 3000, color: 0x7d93ab, size: 0.45 },
+  { innerAU: 2.1, outerAU: 3.3, count: 2500, color: 0x9c9284, size: 1.5 },
+  { innerAU: 30, outerAU: 50, count: 3000, color: 0x7d93ab, size: 1.5 },
 ]
 
 const SECONDS_PER_HOUR = 3600
+const FOLLOW_MIN_DISTANCE_RADII = 1.2
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement
@@ -28,35 +30,49 @@ export interface EngineHandle {
   dispose(): void
 }
 
+const raycaster = new THREE.Raycaster()
+const ndc = new THREE.Vector2()
+
 export function createEngine({ canvas, labelsLayer, store }: EngineOptions): EngineHandle {
   const textures = createTextures({
     onProgress: (loaded, total) => store.getState().setLoading({ text: `Loading textures… ${loaded}/${total}` }),
     onDone: () => store.getState().setLoading({ active: false }),
   })
   const parts = createScene(canvas, textures)
-  const { scene, camera, renderer, controls } = parts
+  const { scene, camera, renderer, controls, starfield } = parts
 
   const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs)
-  const labels = createLabelManager(labelsLayer)
+  const markers = createMarkerLayer(labelsLayer, (id) => store.getState().select(id))
   const belts = BELTS.map((opts) => createSmallBodyBelt(scene, opts))
-  belts.forEach((belt) => belt.applyScale(orbitVisualDistance))
+  belts.forEach((belt) => belt.applyScale((au) => au * AU_KM))
   const follow = createFollowController(camera, controls)
   const originalEarthDayMap = bodies.earthMaterial.map
   const followTarget = new THREE.Vector3()
 
+  function startFollowing(id: string): void {
+    const entry = bodies.byId.get(id)
+    if (!entry) return
+    controls.minDistance = entry.radiusKm * FOLLOW_MIN_DISTANCE_RADII
+    follow.start(flyToDistance(entry.radiusKm), performance.now())
+  }
+
+  function stopFollowing(): void {
+    follow.stop()
+    controls.minDistance = DEFAULT_MIN_DISTANCE_KM
+  }
+
   function applyState(state: AppState, prev: AppState | null): void {
     if (prev && state.resetViewSeq !== prev.resetViewSeq) {
+      stopFollowing()
       camera.position.copy(INITIAL_CAMERA_POSITION)
       controls.target.set(0, 0, 0)
       controls.update()
     }
     if (!prev || state.followId !== prev.followId || state.followSeq !== prev.followSeq) {
-      if (state.followId) follow.start(18, performance.now())
-      else follow.stop()
+      if (state.followId) startFollowing(state.followId)
+      else stopFollowing()
     }
-    if (!prev || state.selectedId !== prev.selectedId) bodies.setSelectedBody(state.selectedId)
-    if (!prev || state.layers.orbits !== prev.layers.orbits) bodies.setOrbitsVisible(state.layers.orbits)
-    if (!prev || state.layers.labels !== prev.layers.labels) labels.setEnabled(state.layers.labels)
+    if (!prev || state.layers.labels !== prev.layers.labels) markers.setEnabled(state.layers.labels)
     if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
       liveTexture.set(state.layers.liveEarthTexture)
     }
@@ -77,20 +93,24 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
   applyState(store.getState(), null)
   const unsubscribe = store.subscribe((state, prev) => applyState(state, prev))
 
-  let pointerDownAt: ScreenPoint | null = null
-  const onPointerDown = (e: PointerEvent) => {
-    pointerDownAt = { x: e.clientX, y: e.clientY }
+  function pickBody(x: number, y: number): string | null {
+    const rect = canvas.getBoundingClientRect()
+    ndc.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1)
+    raycaster.setFromCamera(ndc, camera)
+    const id: unknown = raycaster.intersectObjects(bodies.raycastTargets, false)[0]?.object.userData.bodyId
+    return typeof id === 'string' ? id : null
   }
+
+  const taps = createTapDetector()
+  const sample = (e: PointerEvent) => ({ pointerId: e.pointerId, x: e.clientX, y: e.clientY })
+  const onPointerDown = (e: PointerEvent) => taps.down(sample(e))
   const onPointerUp = (e: PointerEvent) => {
-    if (!pointerDownAt) return
-    const up = { x: e.clientX, y: e.clientY }
-    const down = pointerDownAt
-    pointerDownAt = null
-    if (!isClick(down, up)) return
-    store.getState().select(pickBody(up, canvas, camera, bodies.raycastTargets))
+    if (taps.up(sample(e))) store.getState().select(pickBody(e.clientX, e.clientY))
   }
+  const onPointerCancel = (e: PointerEvent) => taps.cancel(e.pointerId)
   canvas.addEventListener('pointerdown', onPointerDown)
   canvas.addEventListener('pointerup', onPointerUp)
+  canvas.addEventListener('pointercancel', onPointerCancel)
 
   let wasLiveWhenHidden = false
   const onVisibility = () => {
@@ -115,11 +135,14 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
     bodies.updateFrame(state.simTimeMs, deltaSimHours)
     belts.forEach((belt) => belt.updateFrame(deltaSimHours))
 
-    const followId = store.getState().followId
-    if (followId) follow.update(bodies.getBodyWorldPos(followId, followTarget), performance.now())
-
+    if (state.followId) follow.update(bodies.getBodyWorldPos(state.followId, followTarget), performance.now())
     controls.update()
-    labels.update(bodies.list, camera, renderer)
+    camera.updateMatrixWorld()
+    starfield.position.copy(camera.position)
+
+    const height = renderer.domElement.clientHeight
+    bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
+    markers.update(bodies.markerEntries, camera, renderer.domElement.clientWidth, height, state.selectedId)
     renderer.render(scene, camera)
   }
   frame = requestAnimationFrame(tick)
@@ -132,9 +155,11 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       unsubscribe()
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('pointercancel', onPointerCancel)
       document.removeEventListener('visibilitychange', onVisibility)
       timer.dispose()
       liveTexture.dispose()
+      markers.dispose()
       parts.dispose()
     },
   }

@@ -1,15 +1,29 @@
 import * as THREE from 'three'
-import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId, type Vec3 } from '../ephemeris'
+import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
-import { compressRadial, eclipticToScene } from './frames'
-import { ellipsePoints, keplerianPosition } from './orbit'
-import { moonVisualDistance, moonVisualRadius, orbitVisualDistance, planetVisualRadius, sunVisualRadius } from './scale'
+import { eclipticKmToScene } from './frames'
+import { keplerianPosition, ellipsePoints } from './orbit'
+import { ORBIT_OPACITY, orbitColor, relativePositions } from './orbitStyle'
+import { moonVisible, type MarkerEntry } from './markers'
+import { projectedRadiusPx } from './projection'
 import type { Textures } from './textures'
 
 const SPHERE_GEOMETRY = new THREE.SphereGeometry(1, 64, 64)
-const ORIGIN = new THREE.Vector3(0, 0, 0)
-const _tailWorldPos = new THREE.Vector3()
+const SUN_RADIUS_KM = 696_340
+const J2000_MS = Date.UTC(2000, 0, 1, 12)
+const MS_PER_HOUR = 3_600_000
+const ORBIT_REBUILD_MS = 25 * 365.25 * 86_400_000
+const ORBIT_LOCAL_FRACTION = 0.02
+const TAIL_PARTICLE_COUNT = 160
+const TAIL_K_KM = 2e7
+const TAIL_MIN_KM = 2e5
+const TAIL_MAX_KM = 6e7
+const COMET_DASH_KM = 5e6
+const COMET_GAP_KM = 3e6
+
 const _tailDir = new THREE.Vector3()
+const _worldPos = new THREE.Vector3()
+const _parentPos = new THREE.Vector3()
 
 type RingedId = 'saturn' | 'uranus'
 const RING_SPANS: Record<RingedId, { inner: number; outer: number }> = {
@@ -20,17 +34,6 @@ const RING_SPANS: Record<RingedId, { inner: number; outer: number }> = {
 function isRinged(id: string): id is RingedId {
   return id === 'saturn' || id === 'uranus'
 }
-
-const MIN_HIT_RADIUS = { planet: 0.45, moon: 0.18 }
-const SPIN_BAND_SIM_HOURS = { min: 300, max: 4000 }
-const REAL_ROTATION_HOURS = { fastest: 9.93, slowest: 5832.5 }
-const J2000_MS = Date.UTC(2000, 0, 1, 12)
-const MS_PER_HOUR = 3_600_000
-const ORBIT_REBUILD_MS = 25 * 365.25 * 86_400_000
-const TAIL_PARTICLE_COUNT = 120
-const TAIL_MIN_LENGTH = 0.6
-const TAIL_MAX_LENGTH = 14
-const TAIL_LENGTH_K = 40
 
 export interface ExtraMesh {
   mesh: THREE.Mesh
@@ -44,31 +47,33 @@ export interface BodyEntry {
   type: BodyType
   parentId: string | null
   ephemerisId: EphemerisId | null
-  orbitBuiltAtMs: number
   pivot: THREE.Object3D
-  tiltGroup: THREE.Object3D
   mesh: THREE.Mesh
-  hitMesh: THREE.Mesh
   extraMeshes: ExtraMesh[]
   orbitLine: THREE.Line | null
+  orbitMaterial: THREE.LineBasicMaterial | null
+  orbitBaseOpacity: number
+  orbitColor: string
+  orbitPoints: THREE.Vector3[]
+  orbitOrigin: THREE.Vector3
+  orbitBuiltAtMs: number
   tailMesh: THREE.Points | null
-  theta: number
   initialTheta: number
-  eccentricity: number
   angularSpeedPerSimHour: number
   spinRadPerSimHour: number
-  currentRadius: number
-  semiMajorAxis: number
+  radiusKm: number
+  semiMajorAxisKm: number
+  eccentricity: number
 }
 
 export interface Bodies {
   list: BodyEntry[]
   byId: Map<string, BodyEntry>
   raycastTargets: THREE.Mesh[]
+  markerEntries: MarkerEntry[]
   earthMaterial: THREE.MeshPhongMaterial
   updateFrame(simTimeMs: number, deltaSimHours: number): void
-  setOrbitsVisible(visible: boolean): void
-  setSelectedBody(bodyId: string | null): void
+  updateView(camera: THREE.PerspectiveCamera, viewportHeight: number, selectedId: string | null, orbitsOn: boolean): void
   getBodyWorldPos(bodyId: string, target: THREE.Vector3): THREE.Vector3
 }
 
@@ -80,22 +85,9 @@ function degToRad(deg: number): number {
   return (deg * Math.PI) / 180
 }
 
-function visualSpinRadPerSimHour(rotationPeriodHours: number): number {
-  const magnitude = Math.abs(rotationPeriodHours)
-  const t = clamp01(
-    (Math.cbrt(magnitude) - Math.cbrt(REAL_ROTATION_HOURS.fastest)) /
-      (Math.cbrt(REAL_ROTATION_HOURS.slowest) - Math.cbrt(REAL_ROTATION_HOURS.fastest))
-  )
-  const periodSimHours = SPIN_BAND_SIM_HOURS.min + t * (SPIN_BAND_SIM_HOURS.max - SPIN_BAND_SIM_HOURS.min)
-  const direction = rotationPeriodHours < 0 ? -1 : 1
-  return (direction * (2 * Math.PI)) / periodSimHours
-}
-
-function buildHitMesh(): THREE.Mesh {
-  return new THREE.Mesh(
-    SPHERE_GEOMETRY,
-    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, depthTest: false })
-  )
+function spinRadPerSimHour(rotationPeriodHours: number): number {
+  if (!Number.isFinite(rotationPeriodHours) || rotationPeriodHours === 0) return 0
+  return (2 * Math.PI) / rotationPeriodHours
 }
 
 function radialRingUVs(geometry: THREE.RingGeometry, innerRadius: number, outerRadius: number): void {
@@ -111,7 +103,7 @@ function radialRingUVs(geometry: THREE.RingGeometry, innerRadius: number, outerR
 
 function buildRing(id: RingedId, textures: Textures): THREE.Mesh {
   const span = RING_SPANS[id]
-  const geometry = new THREE.RingGeometry(span.inner, span.outer, 96, 1)
+  const geometry = new THREE.RingGeometry(span.inner, span.outer, 128, 1)
   radialRingUVs(geometry, span.inner, span.outer)
   const ring = textures[id].ring
   const material = new THREE.MeshStandardMaterial({
@@ -175,46 +167,6 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
   return new THREE.MeshStandardMaterial(params)
 }
 
-function radiusFor(body: Body, parent: BodyEntry | null): number {
-  if (body.type === 'star') return sunVisualRadius()
-  if (body.type === 'moon' && parent) return moonVisualRadius(body.radiusKm, parent.currentRadius, parent.data.radiusKm)
-  return planetVisualRadius(body.radiusKm)
-}
-
-function semiMajorAxisFor(body: Body, parent: BodyEntry | null): number {
-  if (body.type === 'moon' && parent) return moonVisualDistance(body.distanceFromParentKm ?? 0, parent.currentRadius)
-  return orbitVisualDistance(body.distanceFromSunAU ?? 0)
-}
-
-const _scenePoint = new THREE.Vector3()
-
-function toScenePosition(v: Vec3, out: THREE.Vector3): THREE.Vector3 {
-  return eclipticToScene(compressRadial(v, orbitVisualDistance), out)
-}
-
-function setOrbitGeometry(entry: BodyEntry, points: number[]): void {
-  if (!entry.orbitLine) return
-  entry.orbitLine.geometry.dispose()
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3))
-  entry.orbitLine.geometry = geometry
-  entry.orbitLine.computeLineDistances()
-}
-
-function rebuildOrbitLine(entry: BodyEntry, simTimeMs: number): void {
-  if (!entry.ephemerisId) {
-    setOrbitGeometry(entry, ellipsePoints(entry.semiMajorAxis, entry.eccentricity))
-    return
-  }
-  const points: number[] = []
-  for (const v of orbitPath(entry.ephemerisId, simTimeMs)) {
-    toScenePosition(v, _scenePoint)
-    points.push(_scenePoint.x, _scenePoint.y, _scenePoint.z)
-  }
-  setOrbitGeometry(entry, points)
-  entry.orbitBuiltAtMs = simTimeMs
-}
-
 function buildCometTail(color: string | undefined): THREE.Points {
   const along = new Float32Array(TAIL_PARTICLE_COUNT)
   for (let i = 0; i < TAIL_PARTICLE_COUNT; i++) along[i] = Math.random()
@@ -222,12 +174,12 @@ function buildCometTail(color: string | undefined): THREE.Points {
   geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TAIL_PARTICLE_COUNT * 3), 3))
   const material = new THREE.PointsMaterial({
     color: new THREE.Color(color || '#bcd6ff'),
-    size: 0.3,
+    size: 2,
+    sizeAttenuation: false,
     transparent: true,
-    opacity: 0.5,
+    opacity: 0.55,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    sizeAttenuation: true,
   })
   const points = new THREE.Points(geometry, material)
   points.frustumCulled = false
@@ -235,44 +187,67 @@ function buildCometTail(color: string | undefined): THREE.Points {
   return points
 }
 
-function updateCometTail(entry: BodyEntry, sunWorldPos: THREE.Vector3): void {
+function updateCometTail(entry: BodyEntry): void {
   if (!entry.tailMesh) return
-  const worldPos = entry.pivot.getWorldPosition(_tailWorldPos)
-  const distanceFromSun = worldPos.distanceTo(sunWorldPos)
-  const awayFromSun = _tailDir.copy(worldPos).sub(sunWorldPos).normalize()
-  const length = THREE.MathUtils.clamp(TAIL_LENGTH_K / Math.max(distanceFromSun, 0.01), TAIL_MIN_LENGTH, TAIL_MAX_LENGTH)
+  const worldPos = entry.pivot.getWorldPosition(_worldPos)
+  const distanceAU = worldPos.length() / 149_597_870.7
+  const length = THREE.MathUtils.clamp(TAIL_K_KM / Math.max(distanceAU * distanceAU, 1e-6), TAIL_MIN_KM, TAIL_MAX_KM)
+  _tailDir.copy(worldPos).normalize()
+  entry.tailMesh.position.copy(worldPos)
   const posAttr = entry.tailMesh.geometry.getAttribute('position') as THREE.BufferAttribute
   const along = entry.tailMesh.userData.along as Float32Array
   for (let i = 0; i < along.length; i++) {
     const t = along[i]!
-    const spread = t * 0.35
+    const spread = t * length * 0.04
     posAttr.setXYZ(
       i,
-      worldPos.x + awayFromSun.x * length * t + (Math.random() * 2 - 1) * spread,
-      worldPos.y + awayFromSun.y * length * t + (Math.random() * 2 - 1) * spread,
-      worldPos.z + awayFromSun.z * length * t + (Math.random() * 2 - 1) * spread
+      _tailDir.x * length * t + (Math.random() * 2 - 1) * spread,
+      _tailDir.y * length * t + (Math.random() * 2 - 1) * spread,
+      _tailDir.z * length * t + (Math.random() * 2 - 1) * spread
     )
   }
   posAttr.needsUpdate = true
+}
+
+function writeOrbitBuffer(entry: BodyEntry, origin: THREE.Vector3): void {
+  if (!entry.orbitLine) return
+  entry.orbitOrigin.copy(origin)
+  entry.orbitLine.position.copy(origin)
+  const array = relativePositions(entry.orbitPoints, origin)
+  const attr = entry.orbitLine.geometry.getAttribute('position') as THREE.BufferAttribute | undefined
+  if (attr && attr.array.length === array.length) {
+    ;(attr.array as Float32Array).set(array)
+    attr.needsUpdate = true
+  } else {
+    entry.orbitLine.geometry.setAttribute('position', new THREE.BufferAttribute(array, 3))
+  }
+  entry.orbitLine.geometry.computeBoundingSphere()
+  if (entry.type === 'comet') entry.orbitLine.computeLineDistances()
+}
+
+function rebuildOrbit(entry: BodyEntry, simTimeMs: number): void {
+  if (entry.ephemerisId) {
+    entry.orbitPoints = orbitPath(entry.ephemerisId, simTimeMs).map((v) => eclipticKmToScene(v, new THREE.Vector3()))
+    entry.orbitBuiltAtMs = simTimeMs
+  } else {
+    const flat = ellipsePoints(entry.semiMajorAxisKm, entry.eccentricity)
+    const points: THREE.Vector3[] = []
+    for (let i = 0; i < flat.length; i += 3) points.push(new THREE.Vector3(flat[i], flat[i + 1], flat[i + 2]))
+    entry.orbitPoints = points
+  }
+  writeOrbitBuffer(entry, entry.ephemerisId ? new THREE.Vector3() : entry.orbitOrigin.set(0, 0, 0))
 }
 
 export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: Textures, initialSimTimeMs: number): Bodies {
   const byId = new Map<string, BodyEntry>()
   const list: BodyEntry[] = []
   const raycastTargets: THREE.Mesh[] = []
-
-  const orbitLineMaterial = new THREE.LineBasicMaterial({ color: 0x4d6a99, transparent: true, opacity: 0.35 })
-  const cometOrbitLineMaterial = new THREE.LineDashedMaterial({
-    color: 0x8fa0b8,
-    dashSize: 1.4,
-    gapSize: 1,
-    transparent: true,
-    opacity: 0.55,
-  })
+  const markerEntries: MarkerEntry[] = []
+  const bodyById = new Map(planetsData.map((b) => [b.id, b]))
 
   function makeEntry(body: Body, parentEntry: BodyEntry | null, index: number): BodyEntry {
-    const parentGroup: THREE.Object3D = parentEntry ? parentEntry.pivot : scene
     const ephemerisId = !parentEntry && hasEphemeris(body.id) ? body.id : null
+    const parentGroup: THREE.Object3D = parentEntry ? parentEntry.pivot : scene
 
     const orbitFrame = new THREE.Object3D()
     if (!ephemerisId) {
@@ -284,18 +259,16 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
 
     const pivot = new THREE.Object3D()
     orbitFrame.add(pivot)
-
     const tiltGroup = new THREE.Object3D()
     tiltGroup.rotation.z = degToRad(body.axialTiltDeg || 0)
     pivot.add(tiltGroup)
 
+    const radiusKm = body.type === 'star' ? SUN_RADIUS_KM : body.radiusKm
     const mesh = new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
+    mesh.scale.setScalar(radiusKm)
+    mesh.userData.bodyId = body.id
     tiltGroup.add(mesh)
-
-    const hitMesh = buildHitMesh()
-    hitMesh.userData.bodyId = body.id
-    tiltGroup.add(hitMesh)
-    raycastTargets.push(hitMesh)
+    raycastTargets.push(mesh)
 
     const extraMeshes: ExtraMesh[] = []
     if (body.id === 'earth') {
@@ -311,20 +284,33 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
         })
       )
       tiltGroup.add(clouds)
-      extraMeshes.push({ mesh: clouds, radiusMultiplier: 1.015, spinFactor: 1.15 })
+      extraMeshes.push({ mesh: clouds, radiusMultiplier: 1.004, spinFactor: 1.15 })
     }
     if (isRinged(body.id)) {
       const ring = buildRing(body.id, textures)
       tiltGroup.add(ring)
       extraMeshes.push({ mesh: ring, radiusMultiplier: 1, spinFactor: 0 })
     }
+    for (const extra of extraMeshes) extra.mesh.scale.setScalar(radiusKm * extra.radiusMultiplier)
 
+    const style = orbitColor(body, parentEntry?.data ?? null)
     let orbitLine: THREE.Line | null = null
+    let orbitMaterial: THREE.LineBasicMaterial | null = null
     if (body.type !== 'star') {
-      const isComet = body.type === 'comet'
-      orbitLine = new THREE.Line(new THREE.BufferGeometry(), isComet ? cometOrbitLineMaterial : orbitLineMaterial)
-      orbitLine.visible = !isComet
-      orbitFrame.add(orbitLine)
+      orbitMaterial =
+        body.type === 'comet'
+          ? new THREE.LineDashedMaterial({
+              color: style.color,
+              dashSize: COMET_DASH_KM,
+              gapSize: COMET_GAP_KM,
+              transparent: true,
+              opacity: style.opacity,
+              depthWrite: false,
+            })
+          : new THREE.LineBasicMaterial({ color: style.color, transparent: true, opacity: style.opacity, depthWrite: false })
+      orbitLine = new THREE.Line(new THREE.BufferGeometry(), orbitMaterial)
+      orbitLine.frustumCulled = false
+      ;(ephemerisId ? scene : orbitFrame).add(orbitLine)
     }
 
     const tailMesh = body.type === 'comet' ? buildCometTail(body.color) : null
@@ -336,26 +322,39 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       type: body.type,
       parentId: parentEntry ? parentEntry.id : null,
       ephemerisId,
-      orbitBuiltAtMs: Number.NaN,
       pivot,
-      tiltGroup,
       mesh,
-      hitMesh,
       extraMeshes,
       orbitLine,
+      orbitMaterial,
+      orbitBaseOpacity: style.opacity,
+      orbitColor: style.color,
+      orbitPoints: [],
+      orbitOrigin: new THREE.Vector3(),
+      orbitBuiltAtMs: Number.NaN,
       tailMesh,
-      theta: index * 1.35,
       initialTheta: index * 1.35,
-      eccentricity: body.orbitalEccentricity || 0,
       angularSpeedPerSimHour:
-        body.type === 'star' ? 0 : ((body.retrograde ? -1 : 1) * (2 * Math.PI)) / (body.orbitalPeriodDays * 24),
-      spinRadPerSimHour: visualSpinRadPerSimHour(body.rotationPeriodHours || 1),
-      currentRadius: 1,
-      semiMajorAxis: 0,
+        body.type === 'star' || !(body.orbitalPeriodDays > 0)
+          ? 0
+          : ((body.retrograde ? -1 : 1) * (2 * Math.PI)) / (body.orbitalPeriodDays * 24),
+      spinRadPerSimHour: spinRadPerSimHour(body.rotationPeriodHours),
+      radiusKm,
+      semiMajorAxisKm: parentEntry ? (body.distanceFromParentKm ?? 0) : (body.distanceFromSunAU ?? 0) * 149_597_870.7,
+      eccentricity: Math.min(Math.max(body.orbitalEccentricity ?? 0, 0), 0.99),
     }
-
     byId.set(body.id, entry)
     list.push(entry)
+    markerEntries.push({
+      id: body.id,
+      name: body.name,
+      type: body.type,
+      color: body.type === 'moon' ? (bodyById.get(entry.parentId ?? '')?.color ?? style.color) : style.color,
+      worldKm: new THREE.Vector3(),
+      radiusKm,
+      parentId: entry.parentId,
+      orbitRadiusKm: entry.semiMajorAxisKm,
+    })
     return entry
   }
 
@@ -373,56 +372,57 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
 
   function placeAt(entry: BodyEntry, simTimeMs: number): void {
     if (entry.ephemerisId) {
-      toScenePosition(heliocentricEcliptic(entry.ephemerisId, simTimeMs), entry.pivot.position)
+      eclipticKmToScene(heliocentricEcliptic(entry.ephemerisId, simTimeMs), entry.pivot.position)
       return
     }
-    entry.theta = entry.initialTheta + entry.angularSpeedPerSimHour * ((simTimeMs - J2000_MS) / MS_PER_HOUR)
-    const { x, z } = keplerianPosition(entry.theta, entry.semiMajorAxis, entry.eccentricity)
+    const theta = entry.initialTheta + entry.angularSpeedPerSimHour * ((simTimeMs - J2000_MS) / MS_PER_HOUR)
+    const { x, z } = keplerianPosition(theta, entry.semiMajorAxisKm, entry.eccentricity)
     entry.pivot.position.set(x, 0, z)
-  }
-
-  function layout(simTimeMs: number): void {
-    for (const entry of list) {
-      if (entry.type === 'moon') continue
-      const radius = radiusFor(entry.data, null)
-      entry.currentRadius = radius
-      entry.mesh.scale.setScalar(radius)
-      entry.hitMesh.scale.setScalar(Math.max(radius, MIN_HIT_RADIUS.planet))
-      for (const extra of entry.extraMeshes) extra.mesh.scale.setScalar(radius * extra.radiusMultiplier)
-      if (entry.type === 'star') continue
-      entry.semiMajorAxis = semiMajorAxisFor(entry.data, null)
-      entry.eccentricity = entry.data.orbitalEccentricity || 0
-      rebuildOrbitLine(entry, simTimeMs)
-    }
-    for (const entry of list) {
-      if (entry.type !== 'moon') continue
-      const parent = entry.parentId ? (byId.get(entry.parentId) ?? null) : null
-      const radius = radiusFor(entry.data, parent)
-      entry.currentRadius = radius
-      entry.mesh.scale.setScalar(radius)
-      entry.hitMesh.scale.setScalar(Math.max(radius, MIN_HIT_RADIUS.moon))
-      entry.semiMajorAxis = semiMajorAxisFor(entry.data, parent)
-      rebuildOrbitLine(entry, simTimeMs)
-    }
   }
 
   function updateFrame(simTimeMs: number, deltaSimHours: number): void {
     for (const entry of list) {
       if (entry.type !== 'star') {
         placeAt(entry, simTimeMs)
-        if (entry.ephemerisId && !(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < ORBIT_REBUILD_MS)) {
-          rebuildOrbitLine(entry, simTimeMs)
-        }
+        if (entry.ephemerisId && !(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < ORBIT_REBUILD_MS)) rebuildOrbit(entry, simTimeMs)
       }
       entry.mesh.rotation.y += entry.spinRadPerSimHour * deltaSimHours
       for (const extra of entry.extraMeshes) {
         if (extra.spinFactor) extra.mesh.rotation.y += entry.spinRadPerSimHour * extra.spinFactor * deltaSimHours
       }
-      updateCometTail(entry, ORIGIN)
+    }
+    scene.updateMatrixWorld()
+    for (const entry of list) updateCometTail(entry)
+    markerEntries.forEach((marker, i) => list[i]!.mesh.getWorldPosition(marker.worldKm))
+  }
+
+  function updateView(camera: THREE.PerspectiveCamera, viewportHeight: number, selectedId: string | null, orbitsOn: boolean): void {
+    const fovY = degToRad(camera.fov)
+    for (const entry of list) {
+      if (!entry.orbitLine || !entry.orbitMaterial) continue
+      const selected = entry.id === selectedId
+      entry.orbitMaterial.opacity = selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity
+      let visible = orbitsOn || selected
+      if (visible && entry.parentId) {
+        const parent = byId.get(entry.parentId)
+        if (parent) {
+          parent.pivot.getWorldPosition(_parentPos)
+          const px = projectedRadiusPx(entry.semiMajorAxisKm, camera.position.distanceTo(_parentPos), fovY, viewportHeight)
+          visible = selected || moonVisible(px)
+        }
+      }
+      entry.orbitLine.visible = visible
+      if (!visible || !entry.ephemerisId) continue
+      entry.pivot.getWorldPosition(_worldPos)
+      const near = camera.position.distanceTo(_worldPos) < ORBIT_LOCAL_FRACTION * _worldPos.length()
+      if (near) writeOrbitBuffer(entry, _worldPos)
+      else if (entry.orbitOrigin.lengthSq() !== 0) writeOrbitBuffer(entry, new THREE.Vector3())
     }
   }
 
-  layout(initialSimTimeMs)
+  for (const entry of list) {
+    if (entry.type !== 'star') rebuildOrbit(entry, initialSimTimeMs)
+  }
   updateFrame(initialSimTimeMs, 0)
 
   const earth = byId.get('earth')
@@ -432,18 +432,10 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     list,
     byId,
     raycastTargets,
+    markerEntries,
     earthMaterial: earth.mesh.material,
     updateFrame,
-    setOrbitsVisible(visible) {
-      for (const entry of list) {
-        if (entry.orbitLine && entry.type !== 'comet') entry.orbitLine.visible = visible
-      }
-    },
-    setSelectedBody(bodyId) {
-      for (const entry of list) {
-        if (entry.type === 'comet' && entry.orbitLine) entry.orbitLine.visible = entry.id === bodyId
-      }
-    },
+    updateView,
     getBodyWorldPos(bodyId, target) {
       const entry = byId.get(bodyId)
       if (!entry) return target.set(0, 0, 0)
