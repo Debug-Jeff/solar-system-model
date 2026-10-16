@@ -19,6 +19,9 @@ type Options struct {
 	ElementsPath string
 	Vectors      ephem.VectorSource
 	SBDB         *ephem.SBDB
+	SmallBodies  string
+	NeoWs        *ephem.NeoWs
+	NasaKey      string
 	Now          time.Time
 }
 
@@ -61,6 +64,18 @@ func Run(ctx context.Context, opts Options) error {
 	}
 	pending = append(pending, pendingFile{opts.ElementsPath, append(data, '\n')})
 
+	if opts.SmallBodies != "" {
+		small, err := ephem.BuildSmallBodies(ctx, opts.SBDB, opts.NeoWs, opts.NasaKey, opts.Now)
+		if err != nil {
+			return err
+		}
+		encoded, err := json.Marshal(small)
+		if err != nil {
+			return err
+		}
+		pending = append(pending, pendingFile{opts.SmallBodies, encoded})
+	}
+
 	return writeAll(pending)
 }
 
@@ -101,6 +116,7 @@ func removeAll(paths []string) {
 
 func main() {
 	out := flag.String("out", "../frontend/public/data/ephem", "directory for ephemeris set files")
+	smallBodies := flag.String("smallbodies", "../frontend/public/data/smallbodies.json", "small-bodies file (empty to skip)")
 	elementsPath := flag.String("elements", "../frontend/src/ephemeris/data/smallBodyElements.json", "small-body elements file")
 	flag.Parse()
 
@@ -111,6 +127,9 @@ func main() {
 		ElementsPath: *elementsPath,
 		Vectors:      ephem.NewHorizons(),
 		SBDB:         ephem.NewSBDB(),
+		SmallBodies:  *smallBodies,
+		NeoWs:        ephem.NewNeoWs(),
+		NasaKey:      os.Getenv("NASA_API_KEY"),
 		Now:          time.Now(),
 	})
 	if err != nil {

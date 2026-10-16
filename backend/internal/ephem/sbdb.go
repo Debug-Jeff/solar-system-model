@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"net/http"
 	"net/url"
@@ -54,22 +53,14 @@ func NewSBDB() *SBDB {
 
 func (s *SBDB) Elements(ctx context.Context, designation string) (Elements, error) {
 	q := url.Values{"sstr": {designation}, "full-prec": {"1"}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.Base+"/sbdb.api?"+q.Encode(), nil)
+	body, err := fetchCapped(ctx, s.http, s.Base+"/sbdb.api?"+q.Encode(), maxSBDBBytes)
 	if err != nil {
-		return Elements{}, errors.New("building request failed")
+		return Elements{}, fmt.Errorf("sbdb %s: %w", designation, err)
 	}
-	res, err := s.http.Do(req)
-	if err != nil {
-		return Elements{}, fmt.Errorf("sbdb %s: request failed", designation)
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return Elements{}, fmt.Errorf("sbdb %s: upstream responded %d", designation, res.StatusCode)
-	}
-	body, err := io.ReadAll(io.LimitReader(res.Body, maxSBDBBytes))
-	if err != nil {
-		return Elements{}, fmt.Errorf("sbdb %s: reading response failed", designation)
-	}
+	return parseSBDBElements(body, designation)
+}
+
+func parseSBDBElements(body []byte, designation string) (Elements, error) {
 	var payload struct {
 		Orbit struct {
 			Epoch    string `json:"epoch"`
