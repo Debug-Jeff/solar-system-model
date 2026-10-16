@@ -1,4 +1,3 @@
-import { DateModal } from './DateModal'
 import { formatSpeed } from './format'
 import { useAppStore, type StoreProps } from './useAppStore'
 
@@ -37,7 +36,6 @@ export function TimeControls({ store }: StoreProps) {
           Jump to Date
         </button>
       </div>
-      <DateModal store={store} />
     </>
   )
 }

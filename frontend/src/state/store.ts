@@ -17,6 +17,7 @@ export interface AppState {
   lastNonzeroSpeed: number
   selectedId: string | null
   followId: string | null
+  followSeq: number
   layers: { orbits: boolean; labels: boolean; liveEarthTexture: boolean }
   nasaPanel: NasaPanelContent | null
   dateModalOpen: boolean
@@ -64,6 +65,7 @@ export function createAppStore(): AppStore {
     lastNonzeroSpeed: 1,
     selectedId: null,
     followId: null,
+    followSeq: 0,
     layers: { orbits: true, labels: true, liveEarthTexture: false },
     nasaPanel: null,
     dateModalOpen: false,
@@ -88,7 +90,8 @@ export function createAppStore(): AppStore {
       set((s) => ({ simTimeMs: ms, simJumpSeq: s.simJumpSeq + 1 }))
       return true
     },
-    select: (id) => set(id === null ? { selectedId: null } : { selectedId: id, followId: id }),
+    select: (id) =>
+      set((s) => (id === null ? { selectedId: null } : { selectedId: id, followId: id, followSeq: s.followSeq + 1 })),
     stopFollow: () => set({ followId: null }),
     setLayer: (layer, on) => set((s) => ({ layers: { ...s.layers, [layer]: on } })),
     showNasaPanel: (content) => set({ nasaPanel: content }),

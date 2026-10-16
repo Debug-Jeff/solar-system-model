@@ -18,11 +18,11 @@ const LOAD_ERROR = 'Could not load — try again.'
 export function TopBar({ store, loaders = defaultLoaders }: StoreProps & { loaders?: NasaLoaders }) {
   const simDate = useAppStore(store, (s) => formatSimDate(s.simTimeMs))
   const showNasaPanel = useAppStore(store, (s) => s.showNasaPanel)
-  const [busy, setBusy] = useState<Source | null>(null)
+  const [busy, setBusy] = useState<Record<Source, boolean>>({ apod: false, epic: false })
   const [error, setError] = useState<string | null>(null)
 
   async function load(source: Source): Promise<void> {
-    setBusy(source)
+    setBusy((b) => ({ ...b, [source]: true }))
     setError(null)
     try {
       let content: NasaPanelContent
@@ -46,7 +46,7 @@ export function TopBar({ store, loaders = defaultLoaders }: StoreProps & { loade
       console.warn(`Could not load ${source}`, err)
       setError(LOAD_ERROR)
     } finally {
-      setBusy(null)
+      setBusy((b) => ({ ...b, [source]: false }))
     }
   }
 
@@ -57,10 +57,10 @@ export function TopBar({ store, loaders = defaultLoaders }: StoreProps & { loade
         {simDate}
       </div>
       <div id="top-actions">
-        <button id="btn-apod" className="pill-btn" disabled={busy === 'apod'} onClick={() => void load('apod')}>
+        <button id="btn-apod" className="pill-btn" disabled={busy.apod} onClick={() => void load('apod')}>
           Picture of the Day
         </button>
-        <button id="btn-live-earth" className="pill-btn" disabled={busy === 'epic'} onClick={() => void load('epic')}>
+        <button id="btn-live-earth" className="pill-btn" disabled={busy.epic} onClick={() => void load('epic')}>
           Live Earth Photo
         </button>
         {error && (

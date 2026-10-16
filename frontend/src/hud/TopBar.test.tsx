@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import type { ApodResponse, EpicItem } from '../api/client'
@@ -26,6 +26,26 @@ test('APOD button disables while loading and re-enables with an error on failure
   pending.reject(new Error('503'))
   expect(await screen.findByText('Could not load — try again.')).toBeInTheDocument()
   expect(button).toBeEnabled()
+})
+
+test('each button stays disabled until its own request settles', async () => {
+  const store = createAppStore()
+  const apod = deferred<ApodResponse>()
+  const epic = deferred<EpicItem>()
+  const loaders = { fetchApod: vi.fn(() => apod.promise), fetchLatestEpic: vi.fn(() => epic.promise) }
+  render(<TopBar store={store} loaders={loaders} />)
+  const apodButton = screen.getByRole('button', { name: 'Picture of the Day' })
+  const epicButton = screen.getByRole('button', { name: 'Live Earth Photo' })
+  await userEvent.click(apodButton)
+  await userEvent.click(epicButton)
+  expect(apodButton).toBeDisabled()
+  expect(epicButton).toBeDisabled()
+  apod.resolve({ title: 'a', url: '/a.jpg', explanation: '' })
+  await screen.findByRole('button', { name: 'Picture of the Day' })
+  await waitFor(() => expect(apodButton).toBeEnabled())
+  expect(epicButton).toBeDisabled()
+  epic.resolve({ date: '2026-10-15 00:00:00', caption: '', imageUrl: '/e.png' })
+  await waitFor(() => expect(epicButton).toBeEnabled())
 })
 
 test('APOD success opens the NASA panel', async () => {

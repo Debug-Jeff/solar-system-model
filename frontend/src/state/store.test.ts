@@ -65,3 +65,11 @@ test('setLayer toggles one layer only', () => {
   s.getState().setLayer('orbits', false)
   expect(s.getState().layers).toEqual({ orbits: false, labels: true, liveEarthTexture: false })
 })
+
+test('selecting the followed body again bumps followSeq so the camera re-frames', () => {
+  s.getState().select('mars')
+  s.getState().select('mars')
+  expect(s.getState().followSeq).toBe(2)
+  s.getState().select(null)
+  expect(s.getState().followSeq).toBe(2)
+})

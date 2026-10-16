@@ -4,6 +4,7 @@ import { SIM_START_MS, BASE_SIM_HOURS_PER_SECOND, type AppState, type AppStore }
 import { createBodies } from './bodies'
 import { createFollowController } from './follow'
 import { createLabelManager } from './labels'
+import { createLiveTextureSwitch } from './liveTexture'
 import { isClick, pickBody, type ScreenPoint } from './picking'
 import { orbitVisualDistance } from './scale'
 import { createScene, INITIAL_CAMERA_POSITION } from './scene'
@@ -52,7 +53,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       controls.target.set(0, 0, 0)
       controls.update()
     }
-    if (!prev || state.followId !== prev.followId) {
+    if (!prev || state.followId !== prev.followId || state.followSeq !== prev.followSeq) {
       if (state.followId) follow.start()
       else follow.stop()
     }
@@ -60,26 +61,21 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
     if (!prev || state.layers.orbits !== prev.layers.orbits) bodies.setOrbitsVisible(state.layers.orbits)
     if (!prev || state.layers.labels !== prev.layers.labels) labels.setEnabled(state.layers.labels)
     if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
-      void setLiveEarthTexture(state.layers.liveEarthTexture)
+      liveTexture.set(state.layers.liveEarthTexture)
     }
   }
 
-  async function setLiveEarthTexture(useLive: boolean): Promise<void> {
-    if (!useLive) {
-      bodies.earthMaterial.map = originalEarthDayMap
+  const liveTexture = createLiveTextureSwitch({
+    load: () => loadLiveEarthTexture(API_BASE),
+    apply: (tex) => {
+      bodies.earthMaterial.map = tex ?? originalEarthDayMap
       bodies.earthMaterial.needsUpdate = true
-      return
-    }
-    try {
-      const tex = await loadLiveEarthTexture(API_BASE)
-      if (!store.getState().layers.liveEarthTexture) return
-      bodies.earthMaterial.map = tex
-      bodies.earthMaterial.needsUpdate = true
-    } catch (err) {
+    },
+    onFail: (err) => {
       console.warn('Live Earth texture unavailable, keeping static texture.', err)
       store.getState().setLayer('liveEarthTexture', false)
-    }
-  }
+    },
+  })
 
   applyState(store.getState(), null)
   const unsubscribe = store.subscribe((state, prev) => applyState(state, prev))
@@ -133,6 +129,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointerup', onPointerUp)
       timer.dispose()
+      liveTexture.dispose()
       parts.dispose()
     },
   }
