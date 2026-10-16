@@ -11,3 +11,9 @@ export function compressRadial(v: Vec3, distanceFn: (au: number) => number): Vec
   const k = distanceFn(r) / r
   return { x: v.x * k, y: v.y * k, z: v.z * k }
 }
+
+export const AU_KM = 149_597_870.7
+
+export function eclipticKmToScene(v: Vec3, out: THREE.Vector3): THREE.Vector3 {
+  return out.set(v.x * AU_KM, v.z * AU_KM, -v.y * AU_KM)
+}
