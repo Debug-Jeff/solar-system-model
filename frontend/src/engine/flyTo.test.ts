@@ -32,7 +32,7 @@ test('flight starts in place and ends at distance from the moving target', () =>
   expect(FLIGHT_MS).toBe(1200)
   const flight = createCameraFlight(camera, controls)
   const body = new THREE.Vector3(1000, 0, 0)
-  flight.start(body, 50, 0)
+  flight.start(50, 0)
   expect(flight.update(body, 0)).toBe(true)
   expect(camera.position.toArray()).toEqual([0, 0, 100])
   body.set(2000, 0, 0)
@@ -44,11 +44,11 @@ test('flight starts in place and ends at distance from the moving target', () =>
 
 test('retargeting mid-flight continues from the current pose', () => {
   const flight = createCameraFlight(camera, controls)
-  flight.start(new THREE.Vector3(1000, 0, 0), 50, 0)
+  flight.start(50, 0)
   flight.update(new THREE.Vector3(1000, 0, 0), 600)
   const before = camera.position.clone()
   const b = new THREE.Vector3(-500, 300, 0)
-  flight.start(b, 20, 600)
+  flight.start(20, 600)
   flight.update(b, 600)
   expect(camera.position.distanceTo(before)).toBeLessThan(1e-6)
 })
