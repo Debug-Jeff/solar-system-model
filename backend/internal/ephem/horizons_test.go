@@ -3,12 +3,15 @@ package ephem
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 const sampleResult = `header
@@ -111,5 +114,50 @@ func TestVectorsSpacesRequests(t *testing.T) {
 	}
 	if gap := second.Sub(first); gap < 45*time.Millisecond {
 		t.Fatalf("requests only %v apart", gap)
+	}
+}
+
+func TestVectorsBudgetFailsFast(t *testing.T) {
+	var calls atomic.Int32
+	h := fakeHorizons(t, func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		jsonResult(sampleResult)(w, r)
+	})
+	h.SetBudget(rate.Every(time.Hour), 1)
+	if _, err := h.Vectors(context.Background(), "501", "500@599", start, start.Add(time.Hour), time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	_, err := h.Vectors(context.Background(), "501", "500@599", start, start.Add(time.Hour), time.Hour)
+	if !errors.Is(err, ErrBudgetExhausted) {
+		t.Fatalf("expected ErrBudgetExhausted, got %v", err)
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("budget exhaustion still called upstream (%d calls)", calls.Load())
+	}
+}
+
+func TestVectorsQueueRespectsContext(t *testing.T) {
+	block := make(chan struct{})
+	var calls atomic.Int32
+	h := fakeHorizons(t, func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			<-block
+		}
+		jsonResult(sampleResult)(w, r)
+	})
+	go func() {
+		_, _ = h.Vectors(context.Background(), "501", "500@599", start, start.Add(time.Hour), time.Hour)
+	}()
+	time.Sleep(20 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel()
+	began := time.Now()
+	_, err := h.Vectors(ctx, "502", "500@599", start, start.Add(time.Hour), time.Hour)
+	close(block)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected deadline while queued, got %v", err)
+	}
+	if time.Since(began) > 500*time.Millisecond {
+		t.Fatalf("queued call ignored its context for %v", time.Since(began))
 	}
 }

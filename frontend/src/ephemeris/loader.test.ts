@@ -25,15 +25,18 @@ test('static snapshot is used when the backend is down', async () => {
   expect(set?.generatedAtMs).toBe(Date.UTC(2026, 9, 16))
 })
 
-test('a newer backend set wins', async () => {
+test('a newer backend set is delivered through onUpdate after the static one', async () => {
+  const onUpdate = vi.fn()
   const set = await loadEphemSet('moons-earth', {
     fetch: fakeFetch({
       '/data/ephem/moons-earth.json': valid('2026-10-16T00:00:00Z'),
       'https://api.test/api/ephem/moons-earth': valid('2026-10-17T00:00:00Z'),
     }),
     apiBase: 'https://api.test',
+    onUpdate,
   })
-  expect(set?.generatedAtMs).toBe(Date.UTC(2026, 9, 17))
+  expect(set?.generatedAtMs).toBe(Date.UTC(2026, 9, 16))
+  await vi.waitFor(() => expect(onUpdate.mock.calls[0]?.[0].generatedAtMs).toBe(Date.UTC(2026, 9, 17)))
 })
 
 test('a malformed static file falls back to the backend', async () => {
@@ -54,4 +57,31 @@ test('unknown set names are refused before any request', async () => {
   const f = fakeFetch({})
   expect(await loadEphemSet('../../etc/passwd', { fetch: f, apiBase: '' })).toBeNull()
   expect(f).not.toHaveBeenCalled()
+})
+
+test('the static set is returned immediately even if the backend never answers, and a newer backend set arrives via onUpdate', async () => {
+  let release!: (r: Response) => void
+  const hanging = new Promise<Response>((resolve) => (release = resolve))
+  const f = vi.fn(async (url: string) => {
+    if (url === '/data/ephem/moons-earth.json') return new Response(JSON.stringify(valid('2026-10-16T00:00:00Z')))
+    return hanging
+  }) as unknown as typeof fetch
+  const onUpdate = vi.fn()
+  const set = await loadEphemSet('moons-earth', { fetch: f, apiBase: 'https://api.test', onUpdate })
+  expect(set?.generatedAtMs).toBe(Date.UTC(2026, 9, 16))
+  expect(onUpdate).not.toHaveBeenCalled()
+  release(new Response(JSON.stringify(valid('2026-10-17T00:00:00Z'))))
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
+  expect(onUpdate.mock.calls[0]![0].generatedAtMs).toBe(Date.UTC(2026, 9, 17))
+})
+
+test('an older backend set does not trigger onUpdate', async () => {
+  const onUpdate = vi.fn()
+  await loadEphemSet('moons-earth', {
+    fetch: fakeFetch({ '/data/ephem/moons-earth.json': valid('2026-10-16T00:00:00Z'), 'https://api.test/api/ephem/moons-earth': valid('2026-10-15T00:00:00Z') }),
+    apiBase: 'https://api.test',
+    onUpdate,
+  })
+  await new Promise((r) => setTimeout(r, 10))
+  expect(onUpdate).not.toHaveBeenCalled()
 })
