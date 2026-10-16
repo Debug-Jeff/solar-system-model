@@ -103,6 +103,39 @@ export function initUI(handlers) {
 
   el('btn-reset-view').addEventListener('click', () => handlers.onResetView())
 
+  // Follow mode: clicking a planet locks the camera onto it. The
+  // indicator pill at the top shows which body is being tracked and
+  // offers a quick stop button.
+  el('follow-stop').addEventListener('click', () => {
+    el('follow-indicator').classList.add('hidden')
+    handlers.onStopFollow()
+  })
+
+  // Date jump modal: lets users set the simulated date directly.
+  el('btn-jump-date').addEventListener('click', () => {
+    const now = new Date(handlers.getCurrentSimDate())
+    el('date-input').value = now.toISOString().split('T')[0]
+    el('date-modal').classList.remove('hidden')
+    el('date-input').focus()
+  })
+
+  el('date-cancel').addEventListener('click', () => el('date-modal').classList.add('hidden'))
+  el('date-go').addEventListener('click', () => {
+    const value = el('date-input').value
+    if (value) handlers.onJumpToDate(value)
+    el('date-modal').classList.add('hidden')
+  })
+
+  el('date-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const value = el('date-input').value
+      if (value) handlers.onJumpToDate(value)
+      el('date-modal').classList.add('hidden')
+    } else if (e.key === 'Escape') {
+      el('date-modal').classList.add('hidden')
+    }
+  })
+
   el('btn-apod').addEventListener('click', async () => {
     el('btn-apod').disabled = true
     try {
@@ -124,5 +157,15 @@ export function initUI(handlers) {
   return {
     showBodyInfo: renderInfoPanel,
     showNasaPanel: renderNasaPanel,
+    showFollowIndicator(name) {
+      el('follow-label').textContent = `Tracking ${name}`
+      el('follow-indicator').classList.remove('hidden')
+    },
+    hideFollowIndicator() {
+      el('follow-indicator').classList.add('hidden')
+    },
+    updateSimDate(dateStr) {
+      el('sim-date').textContent = dateStr
+    },
   }
 }
