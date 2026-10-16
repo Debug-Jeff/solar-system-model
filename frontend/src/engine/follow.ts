@@ -27,7 +27,7 @@ export function createFollowController(camera: THREE.PerspectiveCamera, controls
     update(target, nowMs) {
       if (!active) return
       if (pendingStart) {
-        flight.start(target, pendingStart.distanceKm, pendingStart.nowMs)
+        flight.start(pendingStart.distanceKm, pendingStart.nowMs)
         pendingStart = null
         lastTarget.copy(target)
       }
