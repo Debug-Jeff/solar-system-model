@@ -35,8 +35,8 @@ func StepFor(periodDays float64) time.Duration {
 	return min(max(step, minStep), maxStep)
 }
 
-func round(v, unit float64) float64 {
-	return math.Round(v/unit) * unit
+func round(v, scale float64) float64 {
+	return math.Round(v*scale) / scale
 }
 
 func BuildSet(ctx context.Context, src VectorSource, set string, now time.Time) (SetFile, error) {
@@ -65,7 +65,7 @@ func BuildSet(ctx context.Context, src VectorSource, set string, now time.Time) 
 		}
 		flat := make([]float64, 0, len(states)*6)
 		for _, s := range states {
-			flat = append(flat, round(s.X, 0.1), round(s.Y, 0.1), round(s.Z, 0.1), round(s.VX, 1e-6), round(s.VY, 1e-6), round(s.VZ, 1e-6))
+			flat = append(flat, round(s.X, 10), round(s.Y, 10), round(s.Z, 10), round(s.VX, 1e6), round(s.VY, 1e6), round(s.VZ, 1e6))
 		}
 		file.Bodies[body.ID] = BodyTrack{Center: body.CenterName, StepMinutes: int(step / time.Minute), Count: len(states), States: flat}
 	}
