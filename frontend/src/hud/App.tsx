@@ -4,7 +4,7 @@ import { InfoPanel } from './InfoPanel'
 import { LayerToggles } from './LayerToggles'
 import { LoadingOverlay } from './LoadingOverlay'
 import { NasaPanel } from './NasaPanel'
-import { TimeControls } from './TimeControls'
+import { TimeBar } from './TimeBar'
 import { TopBar } from './TopBar'
 import type { StoreProps } from './useAppStore'
 
@@ -16,7 +16,7 @@ export function App({ store }: StoreProps) {
       <InfoPanel store={store} />
       <NasaPanel store={store} />
       <footer id="hud-bottom">
-        <TimeControls store={store} />
+        <TimeBar store={store} />
         <LayerToggles store={store} />
       </footer>
       <FollowIndicator store={store} />

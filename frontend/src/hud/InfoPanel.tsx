@@ -1,9 +1,13 @@
+import { availability } from '../ephemeris'
 import { formatDistance, formatNumber, formatPeriod, formatRotation, formatType } from './format'
 import { useAppStore, type StoreProps } from './useAppStore'
 
 export function InfoPanel({ store }: StoreProps) {
   const body = useAppStore(store, (s) => s.bodies.find((b) => b.id === s.selectedId) ?? null)
   const select = useAppStore(store, (s) => s.select)
+  const position = useAppStore(store, (s) =>
+    s.selectedId ? (availability(s.selectedId, s.simTimeMs) === 'exact' ? 'Live' : 'Approximate') : null
+  )
 
   const stats: [string, string][] = body
     ? [
@@ -14,6 +18,7 @@ export function InfoPanel({ store }: StoreProps) {
         ['Axial tilt', `${formatNumber(body.axialTiltDeg, 1)}°`],
         ['Mean temp', `${formatNumber(body.meanTempC)}°C`],
         ['Moons', formatNumber(body.moonCount)],
+        ['Position', position ?? '—'],
       ]
     : []
 

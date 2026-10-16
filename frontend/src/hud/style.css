@@ -496,3 +496,58 @@ html, body {
   color: #ffb4a8;
   font-size: 12px;
 }
+
+.time-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.live-badge {
+  background: none;
+  border: none;
+  color: #8a96a8;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 6px;
+}
+
+.live-badge::before {
+  content: '●';
+  margin-right: 6px;
+}
+
+.live-badge.live {
+  color: #4ade80;
+}
+
+.time-readout {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  color: #e8edf5;
+}
+
+.time-zone {
+  color: #8a96a8;
+  font-size: 11px;
+}
+
+.rate-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rate-label {
+  min-width: 72px;
+  color: #4ade80;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
