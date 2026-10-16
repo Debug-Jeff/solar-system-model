@@ -1,0 +1,40 @@
+name: Ephemeris snapshot
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ephemeris-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Build snapshot
+        working-directory: backend
+        run: go run ./cmd/snapshot
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- frontend/public/data/ephem frontend/src/ephemeris/data; then
+            echo "No data changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data/ephem frontend/src/ephemeris/data
+          git commit -m "chore(data): refresh ephemeris snapshot"
+          git push origin HEAD:main
