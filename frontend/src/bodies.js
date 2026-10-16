@@ -348,14 +348,22 @@ export function createBodies(scene, planetsData, initialTrueScale) {
   function makeEntry(body, parentEntry, index) {
     const parentGroup = parentEntry ? parentEntry.tiltGroup : scene
 
-    // Planets/moons are kept in a shared flat plane (inclination ~0-7°
-    // isn't worth the complexity here), but comets have wildly tilted,
-    // often retrograde orbits (Halley: 162°) that are a big part of what
-    // makes them read as comets rather than stray planets. orbitFrame
-    // tilts the whole orbit — the ellipse line and the body's pivot —
-    // out of that shared plane by the body's real inclination.
+    // Every orbit is tilted out of the shared ecliptic (XZ) plane by the
+    // body's real inclination. For planets this is a small tilt (0.8–7°)
+    // but for comets and some moons it's dramatic — Halley's 162° means
+    // its orbit is both retrograde and nearly perpendicular to the
+    // ecliptic, which is a big part of what makes it read as a comet.
+    // orbitFrame tilts the whole orbit — the ellipse line and the body's
+    // pivot — out of that shared plane by the body's real inclination.
     const orbitFrame = new THREE.Object3D()
-    orbitFrame.rotation.z = degToRad(body.orbitalInclinationDeg || 0)
+    orbitFrame.rotation.order = 'YXZ'
+    // Inclination tilts the orbit plane out of the ecliptic (XZ plane),
+    // so it must rotate around X — not Z, which just spins the ellipse
+    // flat. A pseudo longitude of ascending node (not in our dataset) is
+    // derived from the body index via golden-angle spread so each orbit
+    // tilts in a different direction instead of all leaning the same way.
+    orbitFrame.rotation.y = degToRad((index * 137.508) % 360)
+    orbitFrame.rotation.x = degToRad(body.orbitalInclinationDeg || 0)
     parentGroup.add(orbitFrame)
 
     const pivot = new THREE.Object3D()
