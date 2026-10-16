@@ -2,7 +2,7 @@
 
 Date: 2026-10-16
 Owner: Jeff (Debug-Jeff)
-Status: draft, awaiting approval
+Status: approved 2026-10-16
 
 ## Intent
 
@@ -178,6 +178,30 @@ Each branch is cut from up-to-date `main`, is shippable on its own, and is pushe
 10. `feat/meteor-showers`: shower streams and active-now indicators.
 11. `feat/textures-and-quality`: true-color texture set with attribution, KTX2 tiers, quality-tier detection, performance pass on real phones.
 12. `feat/hud-polish`: search, legend, share URL, credits page.
+
+## Data sources (agreed 2026-10-16)
+
+Only one credential is used: `NASA_API_KEY`, kept in `backend/.env` locally, the Render environment in production, and GitHub Actions secrets for the snapshot job.
+
+| Source | Key | Used for |
+|---|---|---|
+| JPL SSD APIs: Horizons, SBDB, SBDB query, CAD | none | moon/spacecraft state vectors; asteroid and comet elements; close approaches |
+| api.nasa.gov NeoWs | NASA key | near-Earth objects, "passing this week" |
+| api.nasa.gov APOD, EPIC; NASA GIBS | NASA key / none | existing imagery features |
+| NASA Trek WMTS (Moon, Mars, Vesta) | none | high-resolution global surface maps for close-up views (global mosaics, not terrain streaming) |
+| CelesTrak GP (OMM JSON) | none | Earth satellite element sets (primary) |
+| NASA-listed TLE API | none | fallback for satellite element sets |
+| NASA Image and Video Library | none | info-panel imagery |
+| DONKI | NASA key | optional: current solar events on the Sun |
+| SSCWeb | none | optional: Earth-orbiting science missions |
+| NASA-3D-Resources (GitHub) | n/a | spacecraft glTF models |
+
+Considered and rejected:
+- **Google Earth Engine:** it needs a GCP project, OAuth and yearly re-verification, and GIBS already covers Earth imagery.
+- **Space-Track:** it needs a login stored on the server, and its user agreement restricts redistribution.
+- **N2YO:** it needs a key and caps calls per hour, and it returns positions rather than elements.
+- **Copernicus/Sentinel Hub/openEO/Planet:** surface imagery is a non-goal.
+- **Open Notify:** HTTP only; optional later, through the backend.
 
 ## Licensing and attribution
 
