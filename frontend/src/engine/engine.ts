@@ -1,13 +1,16 @@
 import * as THREE from 'three'
 import { API_BASE } from '../api/client'
+import { loadEphemSet } from '../ephemeris/loader'
+import { registerSet } from '../ephemeris/moonStore'
 import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
 import { flyToDistance } from './flyTo'
 import { createFollowController } from './follow'
 import { AU_KM } from './frames'
 import { createLiveTextureSwitch } from './liveTexture'
-import { createMarkerLayer } from './markers'
+import { createMarkerLayer, moonVisible } from './markers'
 import { clampOutsideSphere } from './pathFix'
+import { projectedRadiusPx } from './projection'
 import { createScene, INITIAL_CAMERA_POSITION } from './scene'
 import { createSmallBodyBelt, type BeltOptions } from './smallBodies'
 import { createTapDetector } from './tap'
@@ -21,6 +24,7 @@ const BELTS: BeltOptions[] = [
 const SECONDS_PER_HOUR = 3600
 const SURFACE_CLEARANCE = 1.1
 const SUN_CENTER = new THREE.Vector3()
+const _planetPos = new THREE.Vector3()
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement
@@ -61,6 +65,23 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
   function stopFollowing(): void {
     follow.stop()
     controls.zoomToCursor = true
+  }
+
+  const requestedSets = new Set<string>()
+
+  function loadMoonSystems(selectedId: string | null, viewportHeight: number): void {
+    const fovY = THREE.MathUtils.degToRad(camera.fov)
+    for (const system of bodies.moonSystems) {
+      if (requestedSets.has(system.set)) continue
+      const selected = selectedId !== null && (selectedId === system.planetId || system.memberIds.includes(selectedId))
+      bodies.getBodyWorldPos(system.planetId, _planetPos)
+      const px = projectedRadiusPx(system.outerOrbitKm, camera.position.distanceTo(_planetPos), fovY, viewportHeight)
+      if (!selected && !moonVisible(px)) continue
+      requestedSets.add(system.set)
+      void loadEphemSet(system.set, { onUpdate: registerSet }).then((set) => {
+        if (set && !disposed) registerSet(set)
+      })
+    }
   }
 
   function keepOutsideBodies(followId: string | null): void {
@@ -158,6 +179,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
 
     const height = renderer.domElement.clientHeight
     bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
+    loadMoonSystems(state.selectedId, height)
     markers.update(bodies.markerEntries, camera, renderer.domElement.clientWidth, height, state.selectedId)
     renderer.render(scene, camera)
   }
@@ -177,6 +199,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       timer.dispose()
       liveTexture.dispose()
       markers.dispose()
+      bodies.dispose()
       parts.dispose()
     },
   }

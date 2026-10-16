@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
-import { eclipticKmToScene } from './frames'
+import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered } from '../ephemeris/moonStore'
+import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
 import { ORBIT_OPACITY, orbitColor, relativePositions } from './orbitStyle'
 import { moonVisible, type MarkerEntry } from './markers'
@@ -49,6 +50,9 @@ export interface BodyEntry {
   parentId: string | null
   ephemerisId: EphemerisId | null
   pivot: THREE.Object3D
+  orbitFrame: THREE.Object3D
+  baseFrameRotation: THREE.Euler
+  trackActive: boolean
   mesh: THREE.Mesh
   extraMeshes: ExtraMesh[]
   orbitLine: THREE.Line | null
@@ -67,6 +71,13 @@ export interface BodyEntry {
   eccentricity: number
 }
 
+export interface MoonSystem {
+  planetId: string
+  set: string
+  memberIds: string[]
+  outerOrbitKm: number
+}
+
 export interface Bodies {
   list: BodyEntry[]
   byId: Map<string, BodyEntry>
@@ -75,6 +86,8 @@ export interface Bodies {
   earthMaterial: THREE.MeshPhongMaterial
   updateFrame(simTimeMs: number, deltaSimHours: number): void
   updateView(camera: THREE.PerspectiveCamera, viewportHeight: number, selectedId: string | null, orbitsOn: boolean): void
+  moonSystems: MoonSystem[]
+  dispose(): void
   getBodyWorldPos(bodyId: string, target: THREE.Vector3): THREE.Vector3
 }
 
@@ -324,6 +337,9 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       parentId: parentEntry ? parentEntry.id : null,
       ephemerisId,
       pivot,
+      orbitFrame,
+      baseFrameRotation: orbitFrame.rotation.clone(),
+      trackActive: false,
       mesh,
       extraMeshes,
       orbitLine,
@@ -371,7 +387,37 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     if (parent) makeEntry(body, parent, i + 1)
   })
 
+  function rebuildTrackOrbit(entry: BodyEntry, simTimeMs: number): void {
+    entry.orbitPoints = moonOrbitPath(entry.id, simTimeMs, entry.data.orbitalPeriodDays).map((v) =>
+      eclipticKmVecToScene(v, new THREE.Vector3())
+    )
+    entry.orbitBuiltAtMs = simTimeMs
+    writeOrbitBuffer(entry, entry.orbitOrigin.set(0, 0, 0))
+  }
+
+  function placeOnTrack(entry: BodyEntry, simTimeMs: number): boolean {
+    const p = entry.type === 'moon' ? moonPosition(entry.id, simTimeMs) : null
+    if (!p) {
+      if (entry.trackActive) {
+        entry.trackActive = false
+        entry.orbitFrame.rotation.copy(entry.baseFrameRotation)
+        rebuildOrbit(entry, simTimeMs)
+      }
+      return false
+    }
+    if (!entry.trackActive) {
+      entry.trackActive = true
+      entry.orbitFrame.rotation.set(0, 0, 0)
+      entry.orbitBuiltAtMs = Number.NaN
+    }
+    eclipticKmVecToScene(p, entry.pivot.position)
+    const quarterPeriodMs = (entry.data.orbitalPeriodDays * 86_400_000) / 4
+    if (!(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < quarterPeriodMs)) rebuildTrackOrbit(entry, simTimeMs)
+    return true
+  }
+
   function placeAt(entry: BodyEntry, simTimeMs: number): void {
+    if (placeOnTrack(entry, simTimeMs)) return
     if (entry.ephemerisId) {
       eclipticKmToScene(heliocentricEcliptic(entry.ephemerisId, simTimeMs), entry.pivot.position)
       return
@@ -424,6 +470,23 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   for (const entry of list) {
     if (entry.type !== 'star') rebuildOrbit(entry, initialSimTimeMs)
   }
+
+  const unsubscribeSets = onSetRegistered(() => {
+    for (const entry of list) if (entry.trackActive) entry.orbitBuiltAtMs = Number.NaN
+  })
+
+  const moonSystems: MoonSystem[] = []
+  for (const planet of list) {
+    const set = moonSetFor(planet.id)
+    const members = list.filter((e) => e.parentId === planet.id)
+    if (!set || members.length === 0) continue
+    moonSystems.push({
+      planetId: planet.id,
+      set,
+      memberIds: members.map((m) => m.id),
+      outerOrbitKm: Math.max(...members.map((m) => m.semiMajorAxisKm)),
+    })
+  }
   updateFrame(initialSimTimeMs, 0)
 
   const earth = byId.get('earth')
@@ -437,6 +500,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     earthMaterial: earth.mesh.material,
     updateFrame,
     updateView,
+    moonSystems,
+    dispose: unsubscribeSets,
     getBodyWorldPos(bodyId, target) {
       const entry = byId.get(bodyId)
       if (!entry) return target.set(0, 0, 0)
