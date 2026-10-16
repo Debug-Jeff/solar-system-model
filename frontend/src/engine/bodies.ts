@@ -1,5 +1,7 @@
 import * as THREE from 'three'
+import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId, type Vec3 } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
+import { compressRadial, eclipticToScene } from './frames'
 import { ellipsePoints, keplerianPosition } from './orbit'
 import { moonVisualDistance, moonVisualRadius, orbitVisualDistance, planetVisualRadius, sunVisualRadius } from './scale'
 import type { Textures } from './textures'
@@ -22,7 +24,9 @@ function isRinged(id: string): id is RingedId {
 const MIN_HIT_RADIUS = { planet: 0.45, moon: 0.18 }
 const SPIN_BAND_SIM_HOURS = { min: 300, max: 4000 }
 const REAL_ROTATION_HOURS = { fastest: 9.93, slowest: 5832.5 }
-const PLANET_ORBIT_CLEARANCE = 1.2
+const J2000_MS = Date.UTC(2000, 0, 1, 12)
+const MS_PER_HOUR = 3_600_000
+const ORBIT_REBUILD_MS = 25 * 365.25 * 86_400_000
 const TAIL_PARTICLE_COUNT = 120
 const TAIL_MIN_LENGTH = 0.6
 const TAIL_MAX_LENGTH = 14
@@ -39,6 +43,8 @@ export interface BodyEntry {
   data: Body
   type: BodyType
   parentId: string | null
+  ephemerisId: EphemerisId | null
+  orbitBuiltAtMs: number
   pivot: THREE.Object3D
   tiltGroup: THREE.Object3D
   mesh: THREE.Mesh
@@ -60,8 +66,7 @@ export interface Bodies {
   byId: Map<string, BodyEntry>
   raycastTargets: THREE.Mesh[]
   earthMaterial: THREE.MeshPhongMaterial
-  updateFrame(deltaSimHours: number): void
-  snapToTime(elapsedSimHours: number): void
+  updateFrame(simTimeMs: number, deltaSimHours: number): void
   setOrbitsVisible(visible: boolean): void
   setSelectedBody(bodyId: string | null): void
   getBodyWorldPos(bodyId: string, target: THREE.Vector3): THREE.Vector3
@@ -181,32 +186,33 @@ function semiMajorAxisFor(body: Body, parent: BodyEntry | null): number {
   return orbitVisualDistance(body.distanceFromSunAU ?? 0)
 }
 
-function cometVisualOrbit(distanceFromSunAU: number, eccentricity: number) {
-  const periVisual = orbitVisualDistance(distanceFromSunAU * (1 - eccentricity))
-  const apoVisual = orbitVisualDistance(distanceFromSunAU * (1 + eccentricity))
-  return {
-    semiMajorAxis: (periVisual + apoVisual) / 2,
-    eccentricity: (apoVisual - periVisual) / (apoVisual + periVisual),
-  }
+const _scenePoint = new THREE.Vector3()
+
+function toScenePosition(v: Vec3, out: THREE.Vector3): THREE.Vector3 {
+  return eclipticToScene(compressRadial(v, orbitVisualDistance), out)
 }
 
-function enforcePlanetOrbitSpacing(list: BodyEntry[]): void {
-  const planets = list.filter((e) => e.type === 'planet').sort((a, b) => a.semiMajorAxis - b.semiMajorAxis)
-  for (let i = 1; i < planets.length; i++) {
-    const prev = planets[i - 1]!
-    const curr = planets[i]!
-    const minGap = prev.currentRadius + curr.currentRadius + PLANET_ORBIT_CLEARANCE
-    if (curr.semiMajorAxis - prev.semiMajorAxis < minGap) curr.semiMajorAxis = prev.semiMajorAxis + minGap
-  }
-}
-
-function rebuildOrbitLine(entry: BodyEntry): void {
+function setOrbitGeometry(entry: BodyEntry, points: number[]): void {
   if (!entry.orbitLine) return
   entry.orbitLine.geometry.dispose()
   const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(ellipsePoints(entry.semiMajorAxis, entry.eccentricity), 3))
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3))
   entry.orbitLine.geometry = geometry
   entry.orbitLine.computeLineDistances()
+}
+
+function rebuildOrbitLine(entry: BodyEntry, simTimeMs: number): void {
+  if (!entry.ephemerisId) {
+    setOrbitGeometry(entry, ellipsePoints(entry.semiMajorAxis, entry.eccentricity))
+    return
+  }
+  const points: number[] = []
+  for (const v of orbitPath(entry.ephemerisId, simTimeMs)) {
+    toScenePosition(v, _scenePoint)
+    points.push(_scenePoint.x, _scenePoint.y, _scenePoint.z)
+  }
+  setOrbitGeometry(entry, points)
+  entry.orbitBuiltAtMs = simTimeMs
 }
 
 function buildCometTail(color: string | undefined): THREE.Points {
@@ -250,7 +256,7 @@ function updateCometTail(entry: BodyEntry, sunWorldPos: THREE.Vector3): void {
   posAttr.needsUpdate = true
 }
 
-export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: Textures): Bodies {
+export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: Textures, initialSimTimeMs: number): Bodies {
   const byId = new Map<string, BodyEntry>()
   const list: BodyEntry[] = []
   const raycastTargets: THREE.Mesh[] = []
@@ -266,11 +272,14 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
 
   function makeEntry(body: Body, parentEntry: BodyEntry | null, index: number): BodyEntry {
     const parentGroup: THREE.Object3D = parentEntry ? parentEntry.pivot : scene
+    const ephemerisId = !parentEntry && hasEphemeris(body.id) ? body.id : null
 
     const orbitFrame = new THREE.Object3D()
-    orbitFrame.rotation.order = 'YXZ'
-    orbitFrame.rotation.y = degToRad((index * 137.508) % 360)
-    orbitFrame.rotation.x = degToRad(body.orbitalInclinationDeg || 0)
+    if (!ephemerisId) {
+      orbitFrame.rotation.order = 'YXZ'
+      orbitFrame.rotation.y = degToRad((index * 137.508) % 360)
+      orbitFrame.rotation.x = degToRad(body.orbitalInclinationDeg || 0)
+    }
     parentGroup.add(orbitFrame)
 
     const pivot = new THREE.Object3D()
@@ -326,6 +335,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       data: body,
       type: body.type,
       parentId: parentEntry ? parentEntry.id : null,
+      ephemerisId,
+      orbitBuiltAtMs: Number.NaN,
       pivot,
       tiltGroup,
       mesh,
@@ -360,12 +371,17 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     if (parent) makeEntry(body, parent, i + 1)
   })
 
-  function placeAt(entry: BodyEntry): void {
+  function placeAt(entry: BodyEntry, simTimeMs: number): void {
+    if (entry.ephemerisId) {
+      toScenePosition(heliocentricEcliptic(entry.ephemerisId, simTimeMs), entry.pivot.position)
+      return
+    }
+    entry.theta = entry.initialTheta + entry.angularSpeedPerSimHour * ((simTimeMs - J2000_MS) / MS_PER_HOUR)
     const { x, z } = keplerianPosition(entry.theta, entry.semiMajorAxis, entry.eccentricity)
     entry.pivot.position.set(x, 0, z)
   }
 
-  function layout(): void {
+  function layout(simTimeMs: number): void {
     for (const entry of list) {
       if (entry.type === 'moon') continue
       const radius = radiusFor(entry.data, null)
@@ -376,15 +392,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       if (entry.type === 'star') continue
       entry.semiMajorAxis = semiMajorAxisFor(entry.data, null)
       entry.eccentricity = entry.data.orbitalEccentricity || 0
-      if (entry.type === 'comet') {
-        const orbit = cometVisualOrbit(entry.data.distanceFromSunAU ?? 0, entry.eccentricity)
-        entry.semiMajorAxis = orbit.semiMajorAxis
-        entry.eccentricity = orbit.eccentricity
-      }
-    }
-    enforcePlanetOrbitSpacing(list)
-    for (const entry of list) {
-      if (entry.type !== 'moon' && entry.type !== 'star') rebuildOrbitLine(entry)
+      rebuildOrbitLine(entry, simTimeMs)
     }
     for (const entry of list) {
       if (entry.type !== 'moon') continue
@@ -394,15 +402,17 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       entry.mesh.scale.setScalar(radius)
       entry.hitMesh.scale.setScalar(Math.max(radius, MIN_HIT_RADIUS.moon))
       entry.semiMajorAxis = semiMajorAxisFor(entry.data, parent)
-      rebuildOrbitLine(entry)
+      rebuildOrbitLine(entry, simTimeMs)
     }
   }
 
-  function updateFrame(deltaSimHours: number): void {
+  function updateFrame(simTimeMs: number, deltaSimHours: number): void {
     for (const entry of list) {
       if (entry.type !== 'star') {
-        entry.theta += entry.angularSpeedPerSimHour * deltaSimHours
-        placeAt(entry)
+        placeAt(entry, simTimeMs)
+        if (entry.ephemerisId && !(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < ORBIT_REBUILD_MS)) {
+          rebuildOrbitLine(entry, simTimeMs)
+        }
       }
       entry.mesh.rotation.y += entry.spinRadPerSimHour * deltaSimHours
       for (const extra of entry.extraMeshes) {
@@ -412,17 +422,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     }
   }
 
-  function snapToTime(elapsedSimHours: number): void {
-    for (const entry of list) {
-      if (entry.type === 'star') continue
-      entry.theta = entry.initialTheta + entry.angularSpeedPerSimHour * elapsedSimHours
-      placeAt(entry)
-      updateCometTail(entry, ORIGIN)
-    }
-  }
-
-  layout()
-  updateFrame(0)
+  layout(initialSimTimeMs)
+  updateFrame(initialSimTimeMs, 0)
 
   const earth = byId.get('earth')
   if (!earth || !(earth.mesh.material instanceof THREE.MeshPhongMaterial)) throw new Error('planet data has no earth')
@@ -433,7 +434,6 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     raycastTargets,
     earthMaterial: earth.mesh.material,
     updateFrame,
-    snapToTime,
     setOrbitsVisible(visible) {
       for (const entry of list) {
         if (entry.orbitLine && entry.type !== 'comet') entry.orbitLine.visible = visible

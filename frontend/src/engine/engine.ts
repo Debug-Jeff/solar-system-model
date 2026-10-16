@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { API_BASE } from '../api/client'
-import { SIM_START_MS, BASE_SIM_HOURS_PER_SECOND, type AppState, type AppStore } from '../state/store'
+import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
 import { createFollowController } from './follow'
 import { createLabelManager } from './labels'
@@ -16,7 +16,7 @@ const BELTS: BeltOptions[] = [
   { innerAU: 30, outerAU: 50, count: 3000, color: 0x7d93ab, size: 0.45 },
 ]
 
-const MS_PER_HOUR = 3_600_000
+const SECONDS_PER_HOUR = 3600
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement
@@ -36,7 +36,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
   const parts = createScene(canvas, textures)
   const { scene, camera, renderer, controls } = parts
 
-  const bodies = createBodies(scene, store.getState().bodies, textures)
+  const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs)
   const labels = createLabelManager(labelsLayer)
   const belts = BELTS.map((opts) => createSmallBodyBelt(scene, opts))
   belts.forEach((belt) => belt.applyScale(orbitVisualDistance))
@@ -45,9 +45,6 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
   const followTarget = new THREE.Vector3()
 
   function applyState(state: AppState, prev: AppState | null): void {
-    if (!prev || state.simJumpSeq !== prev.simJumpSeq) {
-      bodies.snapToTime((state.simTimeMs - SIM_START_MS) / MS_PER_HOUR)
-    }
     if (prev && state.resetViewSeq !== prev.resetViewSeq) {
       camera.position.copy(INITIAL_CAMERA_POSITION)
       controls.target.set(0, 0, 0)
@@ -95,6 +92,13 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
   canvas.addEventListener('pointerdown', onPointerDown)
   canvas.addEventListener('pointerup', onPointerUp)
 
+  let wasLiveWhenHidden = false
+  const onVisibility = () => {
+    if (document.hidden) wasLiveWhenHidden = isLive(store.getState(), Date.now())
+    else store.getState().resyncIfLive(wasLiveWhenHidden)
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+
   const timer = new THREE.Timer()
   timer.connect(document)
   let frame = 0
@@ -104,11 +108,11 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
     frame = requestAnimationFrame(tick)
     timer.update(timestamp)
     const delta = timer.getDelta()
+    store.getState().advance(delta)
     const state = store.getState()
-    const deltaSimHours = delta * state.speed * BASE_SIM_HOURS_PER_SECOND
-    state.advance(delta)
+    const deltaSimHours = state.paused ? 0 : (delta * state.rate) / SECONDS_PER_HOUR
 
-    bodies.updateFrame(deltaSimHours)
+    bodies.updateFrame(state.simTimeMs, deltaSimHours)
     belts.forEach((belt) => belt.updateFrame(deltaSimHours))
 
     const followId = store.getState().followId
@@ -128,6 +132,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       unsubscribe()
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointerup', onPointerUp)
+      document.removeEventListener('visibilitychange', onVisibility)
       timer.dispose()
       liveTexture.dispose()
       parts.dispose()
