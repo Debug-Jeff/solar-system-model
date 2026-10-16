@@ -1,75 +1,143 @@
 import { beforeEach, expect, test } from 'vitest'
-import { createAppStore, SIM_START_MS, type AppStore } from './store'
+import { createAppStore, isLive, MAX_SIM_MS, MIN_SIM_MS, RATE_STEPS, type AppStore } from './store'
 
+let now: number
 let s: AppStore
 
 beforeEach(() => {
-  s = createAppStore()
+  now = Date.UTC(2026, 9, 16, 12)
+  s = createAppStore(() => now)
 })
 
-test('advance adds speed × 24 sim hours per real second', () => {
-  s.getState().setSpeed(2)
-  s.getState().advance(0.5)
-  expect(s.getState().simTimeMs).toBe(SIM_START_MS + 24 * 3600_000)
+const st = () => s.getState()
+
+test('starts at now, real rate, live', () => {
+  expect(st().simTimeMs).toBe(now)
+  expect(st().rate).toBe(1)
+  expect(st().paused).toBe(false)
+  expect(isLive(st(), now)).toBe(true)
 })
 
-test('togglePlay pauses then restores last non-zero speed', () => {
-  s.getState().setSpeed(-1.5)
-  s.getState().togglePlay()
-  expect(s.getState().speed).toBe(0)
-  s.getState().togglePlay()
-  expect(s.getState().speed).toBe(-1.5)
+test('advance adds realSeconds × rate', () => {
+  s.setState({ rate: 3600 })
+  st().advance(2)
+  expect(st().simTimeMs).toBe(now + 2 * 3600 * 1000)
 })
 
-test('setSpeed clamps to [-3, 3]', () => {
-  s.getState().setSpeed(9)
-  expect(s.getState().speed).toBe(3)
-  s.getState().setSpeed(-9)
-  expect(s.getState().speed).toBe(-3)
+test('faster steps through RATE_STEPS and stops at the top', () => {
+  st().faster()
+  expect(st().rate).toBe(60)
+  s.setState({ rate: RATE_STEPS[RATE_STEPS.length - 1]! })
+  st().faster()
+  expect(st().rate).toBe(31_557_600)
+})
+
+test('slower stops at real rate', () => {
+  st().slower()
+  expect(st().rate).toBe(1)
+  s.setState({ rate: 86_400 })
+  st().slower()
+  expect(st().rate).toBe(3600)
+})
+
+test('reverse keeps the magnitude and faster keeps the sign', () => {
+  st().reverse()
+  expect(st().rate).toBe(-1)
+  st().faster()
+  expect(st().rate).toBe(-60)
+})
+
+test('paused: advance changes nothing and not live', () => {
+  st().togglePlay()
+  expect(st().paused).toBe(true)
+  st().advance(5)
+  expect(st().simTimeMs).toBe(now)
+  expect(isLive(st(), now)).toBe(false)
+  st().togglePlay()
+  expect(st().paused).toBe(false)
+})
+
+test('running past the end clamps and pauses', () => {
+  s.setState({ simTimeMs: Date.UTC(2050, 11, 1), rate: 31_557_600 })
+  st().advance(10)
+  expect(st().simTimeMs).toBe(MAX_SIM_MS)
+  expect(st().paused).toBe(true)
+  expect(Number.isNaN(st().simTimeMs)).toBe(false)
+})
+
+test('running before the start in reverse clamps and pauses', () => {
+  s.setState({ simTimeMs: Date.UTC(1900, 1, 1), rate: -31_557_600 })
+  st().advance(10)
+  expect(st().simTimeMs).toBe(MIN_SIM_MS)
+  expect(st().paused).toBe(true)
+})
+
+test('goLive restores now, real rate and unpaused', () => {
+  st().jumpToDate('2030-01-02')
+  st().faster()
+  st().togglePlay()
+  now += 5000
+  st().goLive()
+  expect(st().simTimeMs).toBe(now)
+  expect(st().rate).toBe(1)
+  expect(st().paused).toBe(false)
+  expect(isLive(st(), now)).toBe(true)
+})
+
+test('isLive tolerates under 2 s of drift only', () => {
+  expect(isLive({ ...st(), simTimeMs: now - 1000 }, now)).toBe(true)
+  expect(isLive({ ...st(), simTimeMs: now - 3000 }, now)).toBe(false)
+  expect(isLive({ ...st(), rate: 60 }, now)).toBe(false)
+})
+
+test('resyncIfLive jumps to now only when it was live', () => {
+  now += 600_000
+  st().resyncIfLive(false)
+  expect(st().simTimeMs).toBe(Date.UTC(2026, 9, 16, 12))
+  st().resyncIfLive(true)
+  expect(st().simTimeMs).toBe(now)
 })
 
 test.each(['', 'abc', '2026-13-01', '2026-02-30', '99999-01-01', '1899-12-31', '2051-01-01'])(
   'jumpToDate rejects %s',
   (value) => {
-    const before = s.getState().simTimeMs
-    expect(s.getState().jumpToDate(value)).toBe(false)
-    expect(s.getState().simTimeMs).toBe(before)
-    expect(Number.isNaN(s.getState().simTimeMs)).toBe(false)
-    expect(s.getState().simJumpSeq).toBe(0)
+    expect(st().jumpToDate(value)).toBe(false)
+    expect(st().simTimeMs).toBe(now)
   }
 )
 
-test('jumpToDate accepts a valid date and bumps simJumpSeq', () => {
-  expect(s.getState().jumpToDate('2030-01-02')).toBe(true)
-  expect(s.getState().simTimeMs).toBe(Date.UTC(2030, 0, 2))
-  expect(s.getState().simJumpSeq).toBe(1)
+test('jumpToDate sets time and keeps rate', () => {
+  st().faster()
+  expect(st().jumpToDate('2030-01-02')).toBe(true)
+  expect(st().simTimeMs).toBe(Date.UTC(2030, 0, 2))
+  expect(st().rate).toBe(60)
 })
 
 test('select sets selection and follow; select(null) keeps follow', () => {
-  s.getState().select('mars')
-  expect(s.getState().selectedId).toBe('mars')
-  expect(s.getState().followId).toBe('mars')
-  s.getState().select(null)
-  expect(s.getState().selectedId).toBeNull()
-  expect(s.getState().followId).toBe('mars')
-})
-
-test('resetView clears follow and bumps resetViewSeq', () => {
-  s.getState().select('mars')
-  s.getState().resetView()
-  expect(s.getState().followId).toBeNull()
-  expect(s.getState().resetViewSeq).toBe(1)
-})
-
-test('setLayer toggles one layer only', () => {
-  s.getState().setLayer('orbits', false)
-  expect(s.getState().layers).toEqual({ orbits: false, labels: true, liveEarthTexture: false })
+  st().select('mars')
+  expect(st().selectedId).toBe('mars')
+  expect(st().followId).toBe('mars')
+  st().select(null)
+  expect(st().selectedId).toBeNull()
+  expect(st().followId).toBe('mars')
 })
 
 test('selecting the followed body again bumps followSeq so the camera re-frames', () => {
-  s.getState().select('mars')
-  s.getState().select('mars')
-  expect(s.getState().followSeq).toBe(2)
-  s.getState().select(null)
-  expect(s.getState().followSeq).toBe(2)
+  st().select('mars')
+  st().select('mars')
+  expect(st().followSeq).toBe(2)
+  st().select(null)
+  expect(st().followSeq).toBe(2)
+})
+
+test('resetView clears follow and bumps resetViewSeq', () => {
+  st().select('mars')
+  st().resetView()
+  expect(st().followId).toBeNull()
+  expect(st().resetViewSeq).toBe(1)
+})
+
+test('setLayer toggles one layer only', () => {
+  st().setLayer('orbits', false)
+  expect(st().layers).toEqual({ orbits: false, labels: true, liveEarthTexture: false })
 })
