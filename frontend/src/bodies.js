@@ -430,6 +430,7 @@ export function createBodies(scene, planetsData, initialTrueScale) {
       orbitLine,
       tailMesh,
       theta: index * 1.35, // spread starting positions so bodies don't all line up
+      initialTheta: index * 1.35,
       eccentricity: body.orbitalEccentricity || 0,
       angularSpeedPerSimHour:
         body.type === 'star'
@@ -525,6 +526,20 @@ export function createBodies(scene, planetsData, initialTrueScale) {
     }
   }
 
+  // Jumps all bodies to their orbital positions at an absolute elapsed
+  // simulated time, rather than advancing from the current position.
+  // theta (mean anomaly) advances linearly with time, so it's just
+  // initialTheta + angularSpeed * elapsed.
+  function snapToTime(elapsedSimHours) {
+    for (const entry of list) {
+      if (entry.type === 'star') continue
+      entry.theta = entry.initialTheta + entry.angularSpeedPerSimHour * elapsedSimHours
+      const { x, z } = keplerianPosition(entry.theta, entry.semiMajorAxis, entry.eccentricity)
+      entry.pivot.position.set(x, 0, z)
+      if (entry.tailMesh) updateCometTail(entry, ORIGIN)
+    }
+  }
+
   applyScale(initialTrueScale)
 
   // The blanket Orbits toggle only affects planets/moons — comet orbits
@@ -543,6 +558,13 @@ export function createBodies(scene, planetsData, initialTrueScale) {
     }
   }
 
+  const _worldPosScratch = new THREE.Vector3()
+  function getBodyWorldPos(bodyId, target) {
+    const entry = byId.get(bodyId)
+    if (!entry) return target.set(0, 0, 0)
+    return entry.mesh.getWorldPosition(target)
+  }
+
   return {
     list,
     byId,
@@ -552,5 +574,7 @@ export function createBodies(scene, planetsData, initialTrueScale) {
     setTrueScale: applyScale,
     setOrbitsVisible,
     setSelectedBody,
+    getBodyWorldPos,
+    snapToTime,
   }
 }

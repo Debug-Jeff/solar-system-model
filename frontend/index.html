@@ -19,6 +19,7 @@
 
       <header id="hud-top">
         <div id="title">Solar System</div>
+        <div id="sim-date" class="sim-date">Oct 16, 2026</div>
         <div id="top-actions">
           <button id="btn-apod" class="pill-btn">Picture of the Day</button>
           <button id="btn-live-earth" class="pill-btn">Live Earth Photo</button>
@@ -55,10 +56,27 @@
         </div>
         <div class="control-group">
           <button id="btn-reset-view" class="pill-btn">Reset View</button>
+          <button id="btn-jump-date" class="pill-btn">Jump to Date</button>
         </div>
       </footer>
 
       <div id="labels-layer"></div>
+
+      <div id="follow-indicator" class="hidden">
+        <span id="follow-label"></span>
+        <button id="follow-stop" aria-label="Stop tracking">×</button>
+      </div>
+
+      <div id="date-modal" class="hidden">
+        <div class="date-modal-inner glass">
+          <h3>Jump to Date</h3>
+          <input id="date-input" type="date" />
+          <div class="date-modal-actions">
+            <button id="date-cancel" class="pill-btn">Cancel</button>
+            <button id="date-go" class="pill-btn">Go</button>
+          </div>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
