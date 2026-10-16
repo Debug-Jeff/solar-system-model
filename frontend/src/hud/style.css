@@ -551,3 +551,52 @@ html, body {
   font-size: 12px;
   letter-spacing: 0.04em;
 }
+
+.marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0 0 0 11px;
+  background: none;
+  border: none;
+  color: #c9d3e3;
+  font: 600 11px/1 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.marker-ring {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--marker-color, #8899aa);
+  box-shadow: 0 0 6px var(--marker-color, #8899aa);
+  flex: none;
+}
+
+.marker.ring-hidden .marker-ring {
+  visibility: hidden;
+}
+
+.marker-label {
+  text-shadow: 0 0 4px #000, 0 0 8px #000;
+}
+
+.marker:hover .marker-label,
+.marker.selected .marker-label {
+  color: #ffffff;
+}
+
+.marker.selected .marker-ring {
+  border-width: 3px;
+}
