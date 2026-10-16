@@ -49,7 +49,9 @@ async function fetchElements() {
 function datesFor(id, elements) {
   const el = elements[id]
   if (!el) return PLANET_DATES_JD
-  if (id === 'ceres') return [el.epochJd - 50 * YEAR_DAYS, el.epochJd, Math.min(el.epochJd + 24 * YEAR_DAYS, MAX_JD)]
+  if (id === 'ceres') {
+    return [-50, -10, 0, 10, 24].map((years) => Math.min(el.epochJd + years * YEAR_DAYS, MAX_JD))
+  }
   return [el.epochJd - YEAR_DAYS, el.epochJd, el.epochJd + YEAR_DAYS]
 }
 
