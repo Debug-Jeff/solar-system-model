@@ -232,7 +232,7 @@ Considered and rejected:
 
 - **Date range.** Date jump is clamped to 1900-01-01 – 2050-12-31.
   - Planets meet the 0.1° target across that whole range.
-  - Ceres, Pluto, Eris, Haumea and Makemake use embedded SBDB osculating elements (the orbit as it is at one specific moment, its epoch). Their target is 1° within ±50 years of that epoch, and they are flagged "approximate" outside it.
+  - Ceres, Pluto, Eris, Haumea and Makemake use embedded SBDB osculating elements (the orbit as it is at one specific moment, its epoch). Their target is 1° within ±10 years of that epoch, and they are flagged "approximate" outside it. (Revised 2026-10-16: two-body propagation of Ceres drifts about 0.09° per year from Jupiter's perturbations, measured against Horizons, so ±50 years is not achievable. The daily snapshot keeps the epoch current.)
   - Every object has an availability rule for a given time: the sample window, the mission coverage, or ±14 days from the satellite element epoch. Outside it, the object is hidden, or drawn from mean elements with an "approximate" flag. The info panel says which.
 - **LIVE semantics.** LIVE means "displayed time = now at real rate". Separately, each object reports its data freshness. Stale data (past its availability rule) shows the "approximate" flag rather than silently degrading under the LIVE badge.
 - **Routing.**
