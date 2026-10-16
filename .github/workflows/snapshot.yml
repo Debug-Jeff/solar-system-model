@@ -29,7 +29,9 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Build snapshot
         working-directory: backend
-        run: go run ./cmd/snapshot -out "$RUNNER_TEMP/data/ephem" -elements "$RUNNER_TEMP/data/smallBodyElements.json"
+        env:
+          NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+        run: go run ./cmd/snapshot -out "$RUNNER_TEMP/data/ephem" -elements "$RUNNER_TEMP/data/smallBodyElements.json" -smallbodies "$RUNNER_TEMP/data/smallbodies.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ephemeris-snapshot
@@ -56,13 +58,14 @@ jobs:
           mkdir -p frontend/public/data/ephem
           cp "$RUNNER_TEMP"/data/ephem/*.json frontend/public/data/ephem/
           cp "$RUNNER_TEMP/data/smallBodyElements.json" frontend/src/ephemeris/data/smallBodyElements.json
-          if [ -z "$(git status --porcelain -- frontend/public/data/ephem frontend/src/ephemeris/data)" ]; then
+          cp "$RUNNER_TEMP/data/smallbodies.json" frontend/public/data/smallbodies.json
+          if [ -z "$(git status --porcelain -- frontend/public/data frontend/src/ephemeris/data)" ]; then
             echo "No data changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend/public/data/ephem frontend/src/ephemeris/data
+          git add frontend/public/data frontend/src/ephemeris/data
           git commit -m "chore(data): refresh ephemeris snapshot"
           git pull --rebase origin main
           git push origin HEAD:main
