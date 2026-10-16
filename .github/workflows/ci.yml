@@ -39,4 +39,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: no raw HTML sinks
+        run: "! grep -rnE 'innerHTML|insertAdjacentHTML|dangerouslySetInnerHTML' src"
       - run: npm run build

@@ -27,4 +27,5 @@ Open http://localhost:5173. On Windows, `./start.ps1` starts both.
 
 ```sh
 cd backend && go test ./...
+cd frontend && npm test
 ```
