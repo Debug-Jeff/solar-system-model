@@ -51,7 +51,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       controls.update()
     }
     if (!prev || state.followId !== prev.followId || state.followSeq !== prev.followSeq) {
-      if (state.followId) follow.start()
+      if (state.followId) follow.start(18, performance.now())
       else follow.stop()
     }
     if (!prev || state.selectedId !== prev.selectedId) bodies.setSelectedBody(state.selectedId)
@@ -116,7 +116,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
     belts.forEach((belt) => belt.updateFrame(deltaSimHours))
 
     const followId = store.getState().followId
-    if (followId) follow.update(bodies.getBodyWorldPos(followId, followTarget))
+    if (followId) follow.update(bodies.getBodyWorldPos(followId, followTarget), performance.now())
 
     controls.update()
     labels.update(bodies.list, camera, renderer)

@@ -1,43 +1,45 @@
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-
-export const FOLLOW_SMOOTHNESS = 0.08
-export const FOLLOW_CAM_DISTANCE = 18
+import { createCameraFlight } from './flyTo'
 
 export interface FollowController {
-  start(): void
+  start(distanceKm: number, nowMs: number): void
   stop(): void
-  update(target: THREE.Vector3): void
+  update(target: THREE.Vector3, nowMs: number): void
 }
 
 export function createFollowController(camera: THREE.PerspectiveCamera, controls: OrbitControls): FollowController {
+  const flight = createCameraFlight(camera, controls)
+  const lastTarget = new THREE.Vector3()
+  const displacement = new THREE.Vector3()
   let active = false
-  let initialized = false
-  const offset = new THREE.Vector3()
-  const desiredCam = new THREE.Vector3()
+  let pendingStart: { distanceKm: number; nowMs: number } | null = null
 
   return {
-    start() {
+    start(distanceKm, nowMs) {
       active = true
-      initialized = false
+      pendingStart = { distanceKm, nowMs }
     },
     stop() {
       active = false
-      initialized = false
+      pendingStart = null
     },
-    update(target) {
+    update(target, nowMs) {
       if (!active) return
-      if (!initialized) {
-        offset.copy(camera.position).sub(controls.target).normalize().multiplyScalar(FOLLOW_CAM_DISTANCE)
-        camera.position.copy(target).add(offset)
-        controls.target.copy(target)
-        initialized = true
+      if (pendingStart) {
+        flight.start(target, pendingStart.distanceKm, pendingStart.nowMs)
+        pendingStart = null
+        lastTarget.copy(target)
+      }
+      if (flight.active) {
+        flight.update(target, nowMs)
+        lastTarget.copy(target)
         return
       }
-      offset.copy(camera.position).sub(controls.target)
-      desiredCam.copy(target).add(offset)
-      camera.position.lerp(desiredCam, FOLLOW_SMOOTHNESS)
-      controls.target.lerp(target, FOLLOW_SMOOTHNESS)
+      displacement.copy(target).sub(lastTarget)
+      camera.position.add(displacement)
+      controls.target.add(displacement)
+      lastTarget.copy(target)
     },
   }
 }
