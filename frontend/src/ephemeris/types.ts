@@ -7,7 +7,7 @@ export const KEPLER_IDS = ['ceres', 'halley', 'encke'] as const
 
 export type PlanetId = (typeof PLANET_IDS)[number]
 export type KeplerId = (typeof KEPLER_IDS)[number]
-export type EphemerisId = PlanetId | KeplerId
+export type EphemerisId = PlanetId | KeplerId | (string & {})
 
 export interface OrbitalElements {
   epochJd: number

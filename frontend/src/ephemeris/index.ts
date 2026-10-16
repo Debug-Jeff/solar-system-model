@@ -20,11 +20,6 @@ export * from './types'
 
 export const MIN_EPHEMERIS_MS = Date.UTC(1900, 0, 1)
 export const MAX_EPHEMERIS_MS = Date.UTC(2050, 11, 31, 23, 59, 59)
-const CERES_EXACT_WINDOW_DAYS = 10 * 365.25
-
-function isKeplerId(id: string): id is KeplerId {
-  return (KEPLER_IDS as readonly string[]).includes(id)
-}
 
 export function loadElements(raw: unknown): Partial<Record<KeplerId, OrbitalElements>> {
   const source = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
@@ -42,12 +37,41 @@ export function loadElements(raw: unknown): Partial<Record<KeplerId, OrbitalElem
   return out
 }
 
-const ELEMENTS = loadElements(rawElements)
+export type KeplerKind = 'asteroid' | 'comet' | 'dwarfPlanet' | 'neo'
+const EXACT_WINDOW_DAYS: Record<KeplerKind, number> = { asteroid: 10 * 365.25, dwarfPlanet: 10 * 365.25, neo: 365.25, comet: 0 }
+const SEED_KINDS: Record<KeplerId, KeplerKind> = { ceres: 'dwarfPlanet', halley: 'comet', encke: 'comet' }
 
-function elementsFor(id: KeplerId): OrbitalElements {
-  const el = ELEMENTS[id]
-  if (!el) throw new Error(`no orbital elements for ${id}`)
-  return el
+interface KeplerEntry {
+  elements: OrbitalElements
+  kind: KeplerKind
+}
+
+const registry = new Map<string, KeplerEntry>()
+
+export function resetKeplerRegistry(): void {
+  registry.clear()
+  const seeded = loadElements(rawElements)
+  for (const id of KEPLER_IDS) {
+    const el = seeded[id]
+    if (el) registry.set(id, { elements: el, kind: SEED_KINDS[id] })
+  }
+}
+
+resetKeplerRegistry()
+
+export function registerKeplerBody(id: string, elements: OrbitalElements, kind: KeplerKind): void {
+  try {
+    validateElements(elements)
+    registry.set(id, { elements, kind })
+  } catch (err) {
+    console.error(`refusing orbital elements for ${id}`, err)
+  }
+}
+
+function elementsFor(id: string): OrbitalElements {
+  const entry = registry.get(id)
+  if (!entry) throw new Error(`no orbital elements for ${id}`)
+  return entry.elements
 }
 
 function isPlanet(id: string): id is PlanetId {
@@ -55,7 +79,7 @@ function isPlanet(id: string): id is PlanetId {
 }
 
 export function hasEphemeris(id: string): id is EphemerisId {
-  return isPlanet(id) || (isKeplerId(id) && ELEMENTS[id] !== undefined)
+  return isPlanet(id) || registry.has(id)
 }
 
 export function heliocentricEcliptic(id: EphemerisId, utcMs: number): Vec3 {
@@ -81,9 +105,7 @@ export function availability(id: string, utcMs: number): Availability {
   if (utcMs < MIN_EPHEMERIS_MS || utcMs > MAX_EPHEMERIS_MS) return 'approximate'
   if (id === 'sun' || isPlanet(id)) return 'exact'
   if (knowsMoon(id)) return moonAvailability(id, utcMs)
-  if (id === 'ceres') {
-    const ceres = ELEMENTS.ceres
-    return ceres && Math.abs(msToJd(utcMs) - ceres.epochJd) <= CERES_EXACT_WINDOW_DAYS ? 'exact' : 'approximate'
-  }
-  return 'approximate'
+  const entry = registry.get(id)
+  if (!entry || entry.kind === 'comet') return 'approximate'
+  return Math.abs(msToJd(utcMs) - entry.elements.epochJd) <= EXACT_WINDOW_DAYS[entry.kind] ? 'exact' : 'approximate'
 }

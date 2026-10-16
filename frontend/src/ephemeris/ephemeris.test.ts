@@ -21,7 +21,7 @@ const lonDeg = (v: Vec3) => (Math.atan2(v.y, v.x) * 180) / Math.PI
 const latDeg = (v: Vec3) => (Math.atan2(v.z, Math.hypot(v.x, v.y)) * 180) / Math.PI
 const angleDiff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180)
 const norm = (v: Vec3) => Math.hypot(v.x, v.y, v.z)
-const rows = (ids: EphemerisId[]) => ids.flatMap((id) => fixtures[id].map((row) => [id, row] as const))
+const rows = (ids: EphemerisId[]) => ids.flatMap((id) => fixtures[id]!.map((row) => [id, row] as const))
 
 const PLANETS: EphemerisId[] = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']
 const now = Date.UTC(2026, 9, 16)
