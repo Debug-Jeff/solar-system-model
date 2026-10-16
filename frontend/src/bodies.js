@@ -346,7 +346,13 @@ export function createBodies(scene, planetsData, initialTrueScale) {
   })
 
   function makeEntry(body, parentEntry, index) {
-    const parentGroup = parentEntry ? parentEntry.tiltGroup : scene
+    // Moons are parented to the planet's pivot (which carries the
+    // planet's orbital position) rather than its tiltGroup (which also
+    // carries the planet's axial tilt). Parenting to tiltGroup would
+    // tilt the moon's orbital plane by the planet's axial tilt — e.g.
+    // Earth's 23.4° — making the Moon appear to orbit around Earth's
+    // tilted spin axis rather than roughly in the ecliptic as it does.
+    const parentGroup = parentEntry ? parentEntry.pivot : scene
 
     // Every orbit is tilted out of the shared ecliptic (XZ) plane by the
     // body's real inclination. For planets this is a small tilt (0.8–7°)
