@@ -1,0 +1,51 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { expect, test, vi } from 'vitest'
+import type { ApodResponse, EpicItem } from '../api/client'
+import { createAppStore } from '../state/store'
+import { TopBar } from './TopBar'
+
+function deferred<T>() {
+  let resolve!: (v: T) => void
+  let reject!: (e: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
+test('APOD button disables while loading and re-enables with an error on failure', async () => {
+  const store = createAppStore()
+  const pending = deferred<ApodResponse>()
+  const loaders = { fetchApod: vi.fn(() => pending.promise), fetchLatestEpic: vi.fn<() => Promise<EpicItem>>() }
+  render(<TopBar store={store} loaders={loaders} />)
+  const button = screen.getByRole('button', { name: 'Picture of the Day' })
+  await userEvent.click(button)
+  expect(button).toBeDisabled()
+  pending.reject(new Error('503'))
+  expect(await screen.findByText('Could not load — try again.')).toBeInTheDocument()
+  expect(button).toBeEnabled()
+})
+
+test('APOD success opens the NASA panel', async () => {
+  const store = createAppStore()
+  const loaders = {
+    fetchApod: vi.fn(async () => ({ title: 'Nebula', date: '2026-10-16', url: '/a.jpg', explanation: 'gas' })),
+    fetchLatestEpic: vi.fn<() => Promise<EpicItem>>(),
+  }
+  render(<TopBar store={store} loaders={loaders} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Picture of the Day' }))
+  expect(store.getState().nasaPanel).toEqual({ title: 'Nebula — 2026-10-16', imageUrl: '/a.jpg', caption: 'gas' })
+})
+
+test('Live Earth success opens the NASA panel with the EPIC date', async () => {
+  const store = createAppStore()
+  const loaders = {
+    fetchApod: vi.fn<() => Promise<ApodResponse>>(),
+    fetchLatestEpic: vi.fn(async () => ({ date: '2026-10-15 01:02:03', caption: 'earth', imageUrl: '/e.png' })),
+  }
+  render(<TopBar store={store} loaders={loaders} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Live Earth Photo' }))
+  expect(store.getState().nasaPanel?.title).toBe('Live Earth — DSCOVR EPIC (2026-10-15)')
+})
