@@ -33,6 +33,6 @@ void startApp({
   store,
   fetchPlanets,
   fetchSmallBodies: () => loadSmallBodies(),
-  createEngine: (s) => createEngine({ canvas, labelsLayer, store: s }),
+  createEngine: (s, small) => createEngine({ canvas, labelsLayer, store: s, smallBodies: small }),
   isDev: import.meta.env.DEV,
 })

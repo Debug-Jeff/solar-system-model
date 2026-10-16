@@ -11,7 +11,7 @@ export interface StartDeps {
   store: AppStore
   fetchPlanets: () => Promise<Body[]>
   fetchSmallBodies?: () => Promise<SmallBodiesData | null>
-  createEngine: (store: AppStore) => EngineHandle
+  createEngine: (store: AppStore, smallBodies: SmallBodiesData | null) => EngineHandle
   isDev: boolean
 }
 
@@ -19,7 +19,7 @@ export async function startApp({ store, fetchPlanets, fetchSmallBodies, createEn
   try {
     const [planets, small] = await Promise.all([fetchPlanets(), fetchSmallBodies ? fetchSmallBodies().catch(() => null) : null])
     store.getState().setBodies(small ? mergeSmallBodies(planets, small) : planets)
-    createEngine(store)
+    createEngine(store, small)
   } catch (err) {
     console.error('Failed to start solar system:', err)
     store.getState().setLoading({ error: isDev ? DEV_LOAD_ERROR : PROD_LOAD_ERROR })

@@ -6,20 +6,16 @@ import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
 import { flyToDistance } from './flyTo'
 import { createFollowController } from './follow'
-import { AU_KM } from './frames'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
 import { clampOutsideSphere } from './pathFix'
 import { projectedRadiusPx } from './projection'
 import { createScene, INITIAL_CAMERA_POSITION } from './scene'
-import { createSmallBodyBelt, type BeltOptions } from './smallBodies'
+import type { SmallBodiesData } from '../ephemeris/smallBodies'
+import { createKeplerBelt } from './belts'
 import { createTapDetector } from './tap'
 import { createTextures, loadLiveEarthTexture } from './textures'
 
-const BELTS: BeltOptions[] = [
-  { innerAU: 2.1, outerAU: 3.3, count: 2500, color: 0x9c9284, size: 1.5 },
-  { innerAU: 30, outerAU: 50, count: 3000, color: 0x7d93ab, size: 1.5 },
-]
 
 const SECONDS_PER_HOUR = 3600
 const SURFACE_CLEARANCE = 1.1
@@ -30,6 +26,7 @@ export interface EngineOptions {
   canvas: HTMLCanvasElement
   labelsLayer: HTMLElement
   store: AppStore
+  smallBodies?: SmallBodiesData | null
 }
 
 export interface EngineHandle {
@@ -39,7 +36,7 @@ export interface EngineHandle {
 const raycaster = new THREE.Raycaster()
 const ndc = new THREE.Vector2()
 
-export function createEngine({ canvas, labelsLayer, store }: EngineOptions): EngineHandle {
+export function createEngine({ canvas, labelsLayer, store, smallBodies }: EngineOptions): EngineHandle {
   const textures = createTextures({
     onProgress: (loaded, total) => store.getState().setLoading({ text: `Loading textures… ${loaded}/${total}` }),
     onDone: () => store.getState().setLoading({ active: false }),
@@ -49,8 +46,9 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
 
   const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs)
   const markers = createMarkerLayer(labelsLayer, (id) => store.getState().select(id))
-  const belts = BELTS.map((opts) => createSmallBodyBelt(scene, opts))
-  belts.forEach((belt) => belt.applyScale((au) => au * AU_KM))
+  const belts = smallBodies
+    ? [createKeplerBelt(scene, smallBodies.belts.main, 0xd8c6a4, 2), createKeplerBelt(scene, smallBodies.belts.kuiper, 0x9fb6d4, 2)]
+    : []
   const follow = createFollowController(camera, controls)
   const originalEarthDayMap = bodies.earthMaterial.map
   const followTarget = new THREE.Vector3()
@@ -169,7 +167,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
     const deltaSimHours = state.paused ? 0 : (delta * state.rate) / SECONDS_PER_HOUR
 
     bodies.updateFrame(state.simTimeMs, deltaSimHours)
-    belts.forEach((belt) => belt.updateFrame(deltaSimHours))
+    belts.forEach((belt) => belt.update(state.simTimeMs))
 
     if (state.followId) follow.update(bodies.getBodyWorldPos(state.followId, followTarget), performance.now())
     controls.update()
@@ -199,6 +197,7 @@ export function createEngine({ canvas, labelsLayer, store }: EngineOptions): Eng
       timer.dispose()
       liveTexture.dispose()
       markers.dispose()
+      belts.forEach((belt) => belt.dispose())
       bodies.dispose()
       parts.dispose()
     },

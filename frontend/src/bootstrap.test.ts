@@ -41,7 +41,7 @@ test('success sets bodies then creates engine', async () => {
     return { dispose: () => {} }
   })
   await startApp({ store, fetchPlanets: async () => bodies, createEngine, isDev: false })
-  expect(createEngine).toHaveBeenCalledWith(store)
+  expect(createEngine).toHaveBeenCalledWith(store, null)
   expect(store.getState().loading.error).toBeNull()
 })
 
