@@ -126,3 +126,25 @@ func TestEphemFallsBackToYesterday(t *testing.T) {
 		t.Fatalf("expected 502 with nothing cached, got %d", rec.Code)
 	}
 }
+
+type budgetVectors struct{ calls atomic.Int64 }
+
+func (b *budgetVectors) Vectors(context.Context, string, string, time.Time, time.Time, time.Duration) ([]ephem.State, error) {
+	b.calls.Add(1)
+	return nil, ephem.ErrBudgetExhausted
+}
+
+func TestEphemBudgetIsA503AndNotFailureCached(t *testing.T) {
+	d := newTestDeps(t, newFakeNasa(t))
+	b := &budgetVectors{}
+	d.Horizons = b
+	mux := ephemMux(d)
+	rec := get(mux, "/api/ephem/moons-earth")
+	if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") == "" {
+		t.Fatalf("expected 503 with Retry-After, got %d %q", rec.Code, rec.Header().Get("Retry-After"))
+	}
+	get(mux, "/api/ephem/moons-earth")
+	if b.calls.Load() != 2 {
+		t.Fatalf("budget errors must not be failure-cached (calls %d)", b.calls.Load())
+	}
+}

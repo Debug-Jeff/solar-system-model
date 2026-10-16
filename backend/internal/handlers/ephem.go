@@ -3,16 +3,22 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"solarsystem/backend/internal/ephem"
+	"solarsystem/backend/internal/nasa"
 )
 
 const (
 	cacheEphem   = "public, max-age=21600"
-	ephemTimeout = 90 * time.Second
+	ephemTimeout = 5 * time.Minute
 )
+
+func isBudgetError(err error) bool {
+	return errors.Is(err, nasa.ErrRateLimited) || errors.Is(err, ephem.ErrBudgetExhausted)
+}
 
 func ephemKey(set string, day time.Time) string {
 	return "ephem/" + set + "-" + day.UTC().Format(dateLayout) + ".json"

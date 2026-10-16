@@ -124,7 +124,7 @@ func (d *Deps) fetchCached(ctx context.Context, key string, fetch fetchFunc) ([]
 		}
 		body, cacheable, err := fetch(context.WithoutCancel(ctx))
 		if err != nil {
-			if !errors.Is(err, nasa.ErrRateLimited) {
+			if !isBudgetError(err) {
 				d.failures.record(key, d.Now())
 			}
 			return nil, err
@@ -159,7 +159,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 
 func writeUpstreamError(w http.ResponseWriter, err error, what string) {
 	switch {
-	case errors.Is(err, nasa.ErrRateLimited):
+	case isBudgetError(err):
 		w.Header().Set("Retry-After", "30")
 		writeError(w, http.StatusServiceUnavailable, "upstream busy, try again shortly")
 	case errors.Is(err, errRecentFailure):

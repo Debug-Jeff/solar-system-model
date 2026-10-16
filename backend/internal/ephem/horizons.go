@@ -11,9 +11,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 )
+
+var ErrBudgetExhausted = errors.New("horizons request budget exhausted")
 
 const (
 	maxHorizonsBytes = 8 << 20
@@ -29,22 +32,32 @@ type VectorSource interface {
 }
 
 type Horizons struct {
-	Base   string
-	http   *http.Client
-	minGap time.Duration
-	mu     sync.Mutex
-	last   time.Time
+	Base    string
+	http    *http.Client
+	minGap  time.Duration
+	turn    chan struct{}
+	last    time.Time
+	limiter *rate.Limiter
 }
 
 func NewHorizons() *Horizons {
 	return &Horizons{
-		Base:   "https://ssd.jpl.nasa.gov",
-		http:   &http.Client{Timeout: 30 * time.Second},
-		minGap: 300 * time.Millisecond,
+		Base:    "https://ssd.jpl.nasa.gov",
+		http:    &http.Client{Timeout: 30 * time.Second},
+		minGap:  300 * time.Millisecond,
+		turn:    make(chan struct{}, 1),
+		limiter: rate.NewLimiter(rate.Every(2*time.Second), 30),
 	}
 }
 
+func (h *Horizons) SetBudget(limit rate.Limit, burst int) {
+	h.limiter = rate.NewLimiter(limit, burst)
+}
+
 func (h *Horizons) Vectors(ctx context.Context, command, center string, start, stop time.Time, step time.Duration) ([]State, error) {
+	if !h.limiter.Allow() {
+		return nil, ErrBudgetExhausted
+	}
 	q := url.Values{}
 	q.Set("format", "json")
 	q.Set("COMMAND", "'"+command+"'")
@@ -84,8 +97,12 @@ func (h *Horizons) Vectors(ctx context.Context, command, center string, start, s
 }
 
 func (h *Horizons) get(ctx context.Context, rawURL string) ([]byte, error) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	select {
+	case h.turn <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	defer func() { <-h.turn }()
 	if wait := h.minGap - time.Since(h.last); wait > 0 {
 		select {
 		case <-time.After(wait):
