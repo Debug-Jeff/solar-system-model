@@ -1,3 +1,4 @@
+import { DateModal } from './DateModal'
 import { FollowIndicator } from './FollowIndicator'
 import { InfoPanel } from './InfoPanel'
 import { LayerToggles } from './LayerToggles'
@@ -19,6 +20,7 @@ export function App({ store }: StoreProps) {
         <LayerToggles store={store} />
       </footer>
       <FollowIndicator store={store} />
+      <DateModal store={store} />
     </>
   )
 }
