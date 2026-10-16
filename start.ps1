@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
+$ownProcessNames = @('go', 'node', 'backend', 'solarsystem-backend')
 
 function Stop-PortOwner {
     param([int]$Port)
@@ -8,7 +9,11 @@ function Stop-PortOwner {
     foreach ($procId in $ownerIds) {
         if ($procId -and $procId -ne 0) {
             $proc = Get-Process -Id $procId -ErrorAction SilentlyContinue
-            $name = if ($proc) { $proc.ProcessName } else { 'unknown' }
+            if (-not $proc) { continue }
+            $name = $proc.ProcessName
+            if ($ownProcessNames -notcontains $name) {
+                throw "Port $Port is held by PID $procId ($name), which is not part of this project. Stop it yourself or free the port, then re-run."
+            }
             Write-Host "Port $Port is held by PID $procId ($name) - stopping it"
             Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
         }
