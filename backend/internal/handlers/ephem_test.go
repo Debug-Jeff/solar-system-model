@@ -54,7 +54,7 @@ func TestEphemRejectsUnknownSets(t *testing.T) {
 	v := &fakeVectors{}
 	d.Horizons = v
 	mux := ephemMux(d)
-	for _, target := range []string{"/api/ephem/moons-pluto", "/api/ephem/..%2F..%2Fetc", "/api/ephem/moons-jupiter%00", "/api/ephem/"} {
+	for _, target := range []string{"/api/ephem/moons-vulcan", "/api/ephem/..%2F..%2Fetc", "/api/ephem/moons-jupiter%00", "/api/ephem/"} {
 		if rec := get(mux, target); rec.Code != http.StatusNotFound && rec.Code != http.StatusBadRequest {
 			t.Errorf("%s: status %d", target, rec.Code)
 		}

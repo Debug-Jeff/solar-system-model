@@ -1,7 +1,7 @@
 import { API_BASE } from '../api/client'
 import { parseEphemSet, type EphemSet } from './sampled'
 
-export const EPHEM_SETS = ['moons-earth', 'moons-mars', 'moons-jupiter', 'moons-saturn', 'moons-uranus', 'moons-neptune'] as const
+export const EPHEM_SETS = ['moons-earth', 'moons-mars', 'moons-jupiter', 'moons-saturn', 'moons-uranus', 'moons-neptune', 'moons-pluto'] as const
 export type EphemSetName = (typeof EPHEM_SETS)[number]
 export const BACKEND_TIMEOUT_MS = 20_000
 

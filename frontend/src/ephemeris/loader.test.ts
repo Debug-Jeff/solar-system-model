@@ -85,3 +85,8 @@ test('an older backend set does not trigger onUpdate', async () => {
   await new Promise((r) => setTimeout(r, 10))
   expect(onUpdate).not.toHaveBeenCalled()
 })
+
+test('moons-pluto is an allowed set', async () => {
+  const { isEphemSetName } = await import('./loader')
+  expect(isEphemSetName('moons-pluto')).toBe(true)
+})
