@@ -1,20 +1,20 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Body } from '../types/body'
 
-export const BASE_SIM_HOURS_PER_SECOND = 24
-export const SIM_START_MS = Date.UTC(2026, 9, 16)
 export const MIN_JUMP_YEAR = 1900
 export const MAX_JUMP_YEAR = 2050
-const MAX_SPEED = 3
-const MS_PER_HOUR = 3_600_000
+export const MIN_SIM_MS = Date.UTC(MIN_JUMP_YEAR, 0, 1)
+export const MAX_SIM_MS = Date.UTC(MAX_JUMP_YEAR, 11, 31, 23, 59, 59)
+export const RATE_STEPS: readonly number[] = [1, 60, 3600, 86_400, 604_800, 2_629_800, 31_557_600]
+export const LIVE_TOLERANCE_MS = 2000
 
 export type NasaPanelContent = { title: string; imageUrl: string; caption: string }
 
 export interface AppState {
   bodies: Body[]
   simTimeMs: number
-  speed: number
-  lastNonzeroSpeed: number
+  rate: number
+  paused: boolean
   selectedId: string | null
   followId: string | null
   followSeq: number
@@ -22,15 +22,18 @@ export interface AppState {
   nasaPanel: NasaPanelContent | null
   dateModalOpen: boolean
   loading: { active: boolean; text: string; error: string | null }
-  simJumpSeq: number
   resetViewSeq: number
 }
 
 export interface AppActions {
   setBodies(bodies: Body[]): void
   advance(realSeconds: number): void
-  setSpeed(speed: number): void
   togglePlay(): void
+  faster(): void
+  slower(): void
+  reverse(): void
+  goLive(): void
+  resyncIfLive(wasLive: boolean): void
   jumpToDate(isoDate: string): boolean
   select(id: string | null): void
   stopFollow(): void
@@ -43,6 +46,10 @@ export interface AppActions {
 }
 
 export type AppStore = StoreApi<AppState & AppActions>
+
+export function isLive(state: Pick<AppState, 'rate' | 'paused' | 'simTimeMs'>, nowMs: number): boolean {
+  return !state.paused && state.rate === 1 && Math.abs(state.simTimeMs - nowMs) < LIVE_TOLERANCE_MS
+}
 
 export function parseJumpDate(isoDate: string): number | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
@@ -57,12 +64,20 @@ export function parseJumpDate(isoDate: string): number | null {
   return ms
 }
 
-export function createAppStore(): AppStore {
+function stepRate(rate: number, direction: 1 | -1): number {
+  const sign = rate < 0 ? -1 : 1
+  const index = RATE_STEPS.findIndex((step) => step >= Math.abs(rate))
+  const current = index === -1 ? RATE_STEPS.length - 1 : index
+  const next = Math.min(RATE_STEPS.length - 1, Math.max(0, current + direction))
+  return sign * RATE_STEPS[next]!
+}
+
+export function createAppStore(nowMs: () => number = Date.now): AppStore {
   return createStore<AppState & AppActions>()((set, get) => ({
     bodies: [],
-    simTimeMs: SIM_START_MS,
-    speed: 1,
-    lastNonzeroSpeed: 1,
+    simTimeMs: nowMs(),
+    rate: 1,
+    paused: false,
     selectedId: null,
     followId: null,
     followSeq: 0,
@@ -70,24 +85,29 @@ export function createAppStore(): AppStore {
     nasaPanel: null,
     dateModalOpen: false,
     loading: { active: true, text: 'Loading textures…', error: null },
-    simJumpSeq: 0,
     resetViewSeq: 0,
 
     setBodies: (bodies) => set({ bodies }),
-    advance: (realSeconds) =>
-      set((s) => ({ simTimeMs: s.simTimeMs + realSeconds * s.speed * BASE_SIM_HOURS_PER_SECOND * MS_PER_HOUR })),
-    setSpeed: (speed) => {
-      const clamped = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, speed))
-      set((s) => ({ speed: clamped, lastNonzeroSpeed: clamped !== 0 ? clamped : s.lastNonzeroSpeed }))
+    advance: (realSeconds) => {
+      const { paused, rate, simTimeMs } = get()
+      if (paused) return
+      const next = simTimeMs + realSeconds * rate * 1000
+      if (next > MAX_SIM_MS) set({ simTimeMs: MAX_SIM_MS, paused: true })
+      else if (next < MIN_SIM_MS) set({ simTimeMs: MIN_SIM_MS, paused: true })
+      else set({ simTimeMs: next })
     },
-    togglePlay: () => {
-      const { speed, lastNonzeroSpeed } = get()
-      set({ speed: speed === 0 ? lastNonzeroSpeed : 0 })
+    togglePlay: () => set((s) => ({ paused: !s.paused })),
+    faster: () => set((s) => ({ rate: stepRate(s.rate, 1) })),
+    slower: () => set((s) => ({ rate: stepRate(s.rate, -1) })),
+    reverse: () => set((s) => ({ rate: -s.rate })),
+    goLive: () => set({ simTimeMs: nowMs(), rate: 1, paused: false }),
+    resyncIfLive: (wasLive) => {
+      if (wasLive) set({ simTimeMs: nowMs() })
     },
     jumpToDate: (isoDate) => {
       const ms = parseJumpDate(isoDate)
       if (ms === null) return false
-      set((s) => ({ simTimeMs: ms, simJumpSeq: s.simJumpSeq + 1 }))
+      set({ simTimeMs: ms })
       return true
     },
     select: (id) =>
