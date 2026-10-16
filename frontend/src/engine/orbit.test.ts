@@ -31,3 +31,9 @@ test('ellipsePoints closes the loop with segments+1 xyz triples', () => {
   expect(pts).toHaveLength(27)
   pts.slice(0, 3).forEach((v, i) => expect(v).toBeCloseTo(pts[24 + i]!, 9))
 })
+
+test('keplerianPosition moves counter-clockwise about +Y like the ephemeris planets', () => {
+  const a = keplerianPosition(0.1, 5, 0.1)
+  const b = keplerianPosition(0.2, 5, 0.1)
+  expect(a.z * b.x - a.x * b.z).toBeGreaterThan(0)
+})

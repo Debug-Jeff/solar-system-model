@@ -9,7 +9,7 @@ export interface PlanarPoint {
 
 export function ellipticalPosition(theta: number, semiMajorAxis: number, eccentricity: number): PlanarPoint {
   const r = (semiMajorAxis * (1 - eccentricity * eccentricity)) / (1 + eccentricity * Math.cos(theta))
-  return { x: r * Math.cos(theta), z: r * Math.sin(theta) }
+  return { x: r * Math.cos(theta), z: -r * Math.sin(theta) }
 }
 
 export function keplerianPosition(meanAnomaly: number, semiMajorAxis: number, eccentricity: number): PlanarPoint {
@@ -19,7 +19,7 @@ export function keplerianPosition(meanAnomaly: number, semiMajorAxis: number, ec
     Math.sqrt(1 - eccentricity) * Math.cos(E / 2)
   )
   const r = semiMajorAxis * (1 - eccentricity * Math.cos(E))
-  return { x: r * Math.cos(theta), z: r * Math.sin(theta) }
+  return { x: r * Math.cos(theta), z: -r * Math.sin(theta) }
 }
 
 export function ellipsePoints(semiMajorAxis: number, eccentricity: number, segments = 256): number[] {

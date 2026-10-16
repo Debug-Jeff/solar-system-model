@@ -104,3 +104,16 @@ test('hasEphemeris', () => {
   expect(hasEphemeris('io')).toBe(false)
   expect(hasEphemeris('__proto__')).toBe(false)
 })
+
+test('halley orbit line passes through the comet at perihelion', () => {
+  const halley = (elements as Record<string, OrbitalElements>).halley!
+  const periJd = halley.epochJd + (360 - halley.ma) / halley.n
+  const ms = jdToMs(periJd)
+  const comet = heliocentricEcliptic('halley', ms)
+  const nearest = Math.min(...orbitPath('halley', ms + 40 * 86_400_000).map((p) => Math.hypot(p.x - comet.x, p.y - comet.y, p.z - comet.z)))
+  expect(nearest).toBeLessThan(0.01)
+})
+
+test('the Sun is always exact', () => {
+  expect(availability('sun', now)).toBe('exact')
+})

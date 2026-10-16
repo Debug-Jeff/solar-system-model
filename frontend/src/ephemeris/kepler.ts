@@ -29,9 +29,7 @@ export function periodDays(el: OrbitalElements): number {
   return 360 / el.n
 }
 
-export function elementsPosition(el: OrbitalElements, utcMs: number): Vec3 {
-  const meanAnomaly = (el.ma + el.n * (msToJd(utcMs) - el.epochJd)) * DEG
-  const E = eccentricAnomaly(meanAnomaly, el.e)
+function positionAtEccentricAnomaly(el: OrbitalElements, E: number): Vec3 {
   const xp = el.a * (Math.cos(E) - el.e)
   const yp = el.a * Math.sqrt(1 - el.e * el.e) * Math.sin(E)
   const cosO = Math.cos(el.om * DEG)
@@ -45,4 +43,15 @@ export function elementsPosition(el: OrbitalElements, utcMs: number): Vec3 {
     y: (sinO * cosW + cosO * sinW * cosI) * xp + (-sinO * sinW + cosO * cosW * cosI) * yp,
     z: sinW * sinI * xp + cosW * sinI * yp,
   }
+}
+
+export function elementsPosition(el: OrbitalElements, utcMs: number): Vec3 {
+  const meanAnomaly = (el.ma + el.n * (msToJd(utcMs) - el.epochJd)) * DEG
+  return positionAtEccentricAnomaly(el, eccentricAnomaly(meanAnomaly, el.e))
+}
+
+export function elementsOrbitPoints(el: OrbitalElements, segments: number): Vec3[] {
+  const points: Vec3[] = []
+  for (let i = 0; i <= segments; i++) points.push(positionAtEccentricAnomaly(el, (TWO_PI * i) / segments))
+  return points
 }

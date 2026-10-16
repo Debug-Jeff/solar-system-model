@@ -14,13 +14,15 @@ const base = {
   facts: [],
 }
 const bodies: Body[] = [
+  { ...base, id: 'sun', name: 'Sun', type: 'star' },
   { ...base, id: 'mars', name: 'Mars', type: 'planet', distanceFromSunAU: 1.52 },
   { ...base, id: 'halley', name: "Halley's Comet", type: 'comet', distanceFromSunAU: 17.8 },
 ]
 
 test.each([
-  ['mars', 'Live'],
+  ['mars', 'Accurate'],
   ['halley', 'Approximate'],
+  ['sun', 'Accurate'],
 ])('%s position reads %s', (id, label) => {
   const store = createAppStore(() => Date.UTC(2026, 9, 16))
   store.getState().setBodies(bodies)
