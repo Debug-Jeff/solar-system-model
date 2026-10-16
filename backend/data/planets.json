@@ -601,6 +601,27 @@
       ]
     },
     {
+      "id": "charon",
+      "name": "Charon",
+      "type": "moon",
+      "parent": "pluto",
+      "radiusKm": 606,
+      "distanceFromParentKm": 19591,
+      "orbitalEccentricity": 0.0002,
+      "orbitalInclinationDeg": 0.08,
+      "orbitalPeriodDays": 6.387,
+      "rotationPeriodHours": 153.29,
+      "axialTiltDeg": 0,
+      "meanTempC": -220,
+      "moonCount": 0,
+      "color": "#9a8f86",
+      "facts": [
+        "Charon is about half Pluto's diameter, so the pair orbit a point in space between them; many scientists call it a double dwarf planet.",
+        "Pluto and Charon are mutually tidally locked: each always shows the other the same face.",
+        "Its reddish north pole, nicknamed Mordor Macula, is coloured by gas that escapes Pluto and freezes onto Charon."
+      ]
+    },
+    {
       "id": "ceres",
       "name": "Ceres",
       "type": "dwarfPlanet",

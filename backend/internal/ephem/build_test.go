@@ -47,8 +47,8 @@ func TestStepFor(t *testing.T) {
 func TestRegistryIsSafe(t *testing.T) {
 	numeric := regexp.MustCompile(`^[0-9]{3}$`)
 	center := regexp.MustCompile(`^500@[0-9]{3}$`)
-	if len(Sets) != 6 {
-		t.Fatalf("expected 6 sets, got %d", len(Sets))
+	if len(Sets) != 7 {
+		t.Fatalf("expected 7 sets, got %d", len(Sets))
 	}
 	for name, bodies := range Sets {
 		for _, b := range bodies {
@@ -84,7 +84,7 @@ func TestBuildSet(t *testing.T) {
 
 func TestBuildSetErrors(t *testing.T) {
 	now := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
-	if _, err := BuildSet(context.Background(), &fakeSource{}, "moons-pluto", now); err == nil {
+	if _, err := BuildSet(context.Background(), &fakeSource{}, "moons-vulcan", now); err == nil {
 		t.Error("unknown set should fail")
 	}
 	if _, err := BuildSet(context.Background(), &fakeSource{fail: "503"}, "moons-jupiter", now); err == nil {

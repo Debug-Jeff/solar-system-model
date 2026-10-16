@@ -45,4 +45,7 @@ var Sets = map[string][]BodySpec{
 	"moons-neptune": {
 		moon("triton", "801", "500@899", "neptune", 5.876854),
 	},
+	"moons-pluto": {
+		moon("charon", "901", "500@999", "pluto", 6.387221),
+	},
 }
