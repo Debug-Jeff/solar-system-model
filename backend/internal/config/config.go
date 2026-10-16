@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	NasaAPIKey string
-	Port       string
+	NasaAPIKey     string
+	Port           string
+	ClientIPHeader string
 }
 
 func loadDotEnv(path string) {
@@ -40,8 +41,9 @@ func Load() Config {
 	loadDotEnv(".env")
 
 	cfg := Config{
-		NasaAPIKey: os.Getenv("NASA_API_KEY"),
-		Port:       os.Getenv("PORT"),
+		NasaAPIKey:     os.Getenv("NASA_API_KEY"),
+		Port:           os.Getenv("PORT"),
+		ClientIPHeader: os.Getenv("CLIENT_IP_HEADER"),
 	}
 	if cfg.NasaAPIKey == "" {
 		cfg.NasaAPIKey = "DEMO_KEY"
