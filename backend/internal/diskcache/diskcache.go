@@ -1,6 +1,3 @@
-// Package diskcache provides a tiny file-based cache keyed by a
-// relative path under a cache root, used to avoid re-fetching
-// NASA imagery (GIBS mosaics, APOD payloads) that only changes daily.
 package diskcache
 
 import (

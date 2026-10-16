@@ -28,16 +28,8 @@ export function createScene(canvas) {
   controls.minDistance = 5
   controls.maxDistance = 4000
   controls.target.set(0, 0, 0)
-  // Scroll-zoom dollies toward whatever the mouse is hovering over
-  // instead of always toward the orbit target (the Sun) — matching the
-  // "zoom to cursor" behavior of map/CAD tools rather than re-centering
-  // the view on every scroll.
   controls.zoomToCursor = true
 
-  // The Sun is the only light source — a point light at the origin casts
-  // realistic day/night terminators on every planet. A faint ambient
-  // term keeps night sides from going pure black (real space is that
-  // dark, but it reads as a rendering bug rather than "correct").
   const sunLight = new THREE.PointLight(0xffffff, 3.2, 0, 0)
   scene.add(sunLight)
   scene.add(new THREE.AmbientLight(0x394463, 0.35))

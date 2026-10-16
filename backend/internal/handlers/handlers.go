@@ -1,6 +1,3 @@
-// Package handlers implements the HTTP API the frontend talks to.
-// It keeps the NASA API key server-side and caches the expensive
-// upstream calls (GIBS full-globe mosaics, APOD payloads) to disk.
 package handlers
 
 import (
@@ -31,8 +28,6 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, []byte(fmt.Sprintf(`{"error":%q}`, msg)))
 }
 
-// CORS allows the Vite dev server (or any origin) to call the API
-// directly, in addition to being reachable via the Vite dev proxy.
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -58,13 +53,10 @@ func (d *Deps) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, []byte(`{"status":"ok"}`))
 }
 
-// Planets serves the static astronomical facts bundled with the backend.
 func (d *Deps) Planets(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, d.PlanetsJSON)
 }
 
-// Apod proxies NASA's Astronomy Picture of the Day, cached to disk per
-// date since a given day's APOD never changes.
 func (d *Deps) Apod(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 	cacheKey := "apod/" + date + ".json"
@@ -87,10 +79,6 @@ func (d *Deps) Apod(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, body)
 }
 
-// Epic proxies the latest DSCOVR EPIC natural-color Earth photo
-// metadata, rewriting each entry with a ready-to-use image URL that
-// points back at our own image proxy (avoids exposing NASA's archive
-// URL scheme to the frontend and sidesteps any hotlink/CORS issues).
 func (d *Deps) Epic(w http.ResponseWriter, r *http.Request) {
 	cacheKey := "epic/list-" + time.Now().Format("2006-01-02T15") + ".json"
 	if cached, ok := d.Cache.Get(cacheKey); ok {
@@ -130,8 +118,6 @@ func (d *Deps) Epic(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// EpicImage streams a single EPIC photo, cached to disk by its NASA
-// archive path.
 func (d *Deps) EpicImage(w http.ResponseWriter, r *http.Request) {
 	year := r.URL.Query().Get("year")
 	month := r.URL.Query().Get("month")
@@ -163,10 +149,6 @@ func (d *Deps) EpicImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-// Gibs serves a full-globe true-color satellite mosaic for use as a
-// "live satellite" Earth texture. Recent imagery can lag by a day or
-// two while NASA finishes processing, so it walks backwards from the
-// requested date (default: today) until it finds a day with imagery.
 func (d *Deps) Gibs(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 	if date == "" {

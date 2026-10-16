@@ -11,9 +11,6 @@ type Config struct {
 	Port       string
 }
 
-// loadDotEnv reads KEY=VALUE pairs from a .env file into the process
-// environment, skipping blank lines and #-comments. Existing env vars
-// are never overwritten, so real environment variables still win.
 func loadDotEnv(path string) {
 	f, err := os.Open(path)
 	if err != nil {

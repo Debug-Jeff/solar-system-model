@@ -1,16 +1,7 @@
 import * as THREE from 'three'
 
-// Real belt objects at different orbital radii move at genuinely
-// different speeds (Kepler's third law), so each particle gets its own
-// period from its own semi-major axis rather than the whole belt
-// spinning as one rigid disc — this produces the differential
-// shearing real belts actually have, for free.
 const AU_TO_DAYS = (au) => Math.pow(au, 1.5) * 365.25
 
-// Real belts aren't razor-thin rings in the ecliptic; scatter is
-// expressed as a fraction of each particle's own orbital radius so the
-// band's apparent thickness stays proportionally sane whether it's
-// rendered in visual or true scale.
 const VERTICAL_FRACTION = 0.06
 
 export function createSmallBodyBelt(scene, { innerAU, outerAU, count, color, size }) {
@@ -51,8 +42,6 @@ export function createSmallBodyBelt(scene, { innerAU, outerAU, count, color, siz
     posAttr.needsUpdate = true
   }
 
-  // Called once at startup and again whenever the true/visual scale
-  // toggle flips, since that changes what "distance" means in units.
   function applyScale(distanceFn) {
     for (let i = 0; i < count; i++) rUnits[i] = distanceFn(radiiAU[i])
     writePositions()

@@ -1,6 +1,3 @@
-# Starts the Go backend (:8080) and Vite frontend (:5173) together,
-# freeing up either port first if a previous run got left dangling
-
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 

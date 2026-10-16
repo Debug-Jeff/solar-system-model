@@ -9,20 +9,12 @@ import { fetchPlanets, fetchApod, fetchLatestEpic } from './api.js'
 import { loadLiveEarthTexture } from './textures.js'
 import { orbitVisualDistance, orbitTrueDistance } from './data/scale.js'
 
-// Real belt boundaries: the asteroid belt sits roughly 2.1-3.3 AU
-// between Mars and Jupiter; the Kuiper belt spans roughly 30-50 AU
-// starting just beyond Neptune's orbit.
 const BELTS = [
   { innerAU: 2.1, outerAU: 3.3, count: 2500, color: 0x9c9284, size: 0.35 },
   { innerAU: 30, outerAU: 50, count: 3000, color: 0x7d93ab, size: 0.45 },
 ]
 
-// Simulated hours that pass per real second at 1x speed: one simulated
-// day per real second, chosen to be slow enough to actually track a
-// planet's motion by eye (the previous 6 days/sec whipped Mercury
-// through 7% of its whole orbit every second). See bodies.js for how
-// axial spin is deliberately decoupled from this same clock.
-const BASE_SIM_HOURS_PER_SECOND = 24 // 1 simulated day/sec at 1x
+const BASE_SIM_HOURS_PER_SECOND = 24
 
 async function main() {
   const canvas = document.getElementById('scene')
@@ -91,9 +83,6 @@ async function main() {
     },
   })
 
-  // A drag-to-orbit gesture on the canvas shouldn't also count as a
-  // planet click, so a "click" only counts when the pointer barely
-  // moved between down and up.
   canvas.addEventListener('pointerdown', (e) => {
     pointerDownAt = { x: e.clientX, y: e.clientY }
   })

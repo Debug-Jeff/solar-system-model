@@ -1,9 +1,5 @@
 import * as THREE from 'three'
 
-// Renders planet name labels as plain DOM elements positioned by
-// projecting each body's 3D world position into 2D screen space every
-// frame — far cheaper than sprite/canvas-texture text in Three.js, and
-// lets the labels use ordinary CSS (see .planet-label in style.css).
 export function createLabelManager(container) {
   const elements = new Map()
   const worldPos = new THREE.Vector3()

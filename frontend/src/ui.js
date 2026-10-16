@@ -25,9 +25,6 @@ function buildStatRow(label, value) {
   return `<div><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`
 }
 
-// planets.json uses camelCase type values (e.g. "dwarfPlanet") since
-// they're also used as JS identifiers-ish tokens elsewhere; split them
-// into words only for display.
 function formatType(type) {
   return type.replace(/([a-z])([A-Z])/g, '$1 $2')
 }
@@ -65,11 +62,6 @@ export function initUI(handlers) {
   el('info-close').addEventListener('click', () => el('info-panel').classList.add('hidden'))
   el('nasa-close').addEventListener('click', () => el('nasa-panel').classList.add('hidden'))
 
-  // Speed is the single source of truth for "is it moving" — there's no
-  // separate playing flag to fall out of sync with it. 0 IS pause. The
-  // play/pause button is just a shortcut that zeroes it out and, on
-  // resume, restores whatever nonzero speed was last in effect (rather
-  // than always snapping back to 1x).
   const slider = el('speed-slider')
   let currentSpeed = parseFloat(slider.value)
   let lastNonzeroSpeed = currentSpeed || 1
