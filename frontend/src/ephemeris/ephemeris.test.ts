@@ -1,9 +1,10 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import elements from './data/smallBodyElements.json'
 import horizons from './fixtures/horizons.json'
 import {
   availability,
   hasEphemeris,
+  loadElements,
   heliocentricEcliptic,
   orbitPath,
   UNIX_EPOCH_JD,
@@ -116,4 +117,12 @@ test('halley orbit line passes through the comet at perihelion', () => {
 
 test('the Sun is always exact', () => {
   expect(availability('sun', now)).toBe('exact')
+})
+
+test('invalid small-body elements are dropped with an error, not thrown', () => {
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const loaded = loadElements({ ceres: { ...ceres, e: 1.2 }, halley: (elements as Record<string, OrbitalElements>).halley, encke: 'nope' })
+  expect(Object.keys(loaded)).toEqual(['halley'])
+  expect(error).toHaveBeenCalledTimes(2)
+  error.mockRestore()
 })
