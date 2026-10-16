@@ -1,3 +1,4 @@
+import { inject as injectAnalytics } from '@vercel/analytics'
 import { injectSpeedInsights } from '@vercel/speed-insights'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -15,6 +16,7 @@ function requireElement<T extends HTMLElement>(id: string, type: new () => T): T
 }
 
 injectSpeedInsights()
+injectAnalytics()
 
 const store = createAppStore()
 const canvas = requireElement('scene', HTMLCanvasElement)
