@@ -1,5 +1,6 @@
 import rawElements from './data/smallBodyElements.json'
 import { elementsOrbitPoints, elementsPosition, periodDays, validateElements } from './kepler'
+import { knowsMoon, moonAvailability } from './moonStore'
 import { PLANET_PERIOD_DAYS, planetPosition } from './planets'
 import {
   KEPLER_IDS,
@@ -79,6 +80,7 @@ export function orbitPath(id: EphemerisId, utcMs: number, segments = 360): Vec3[
 export function availability(id: string, utcMs: number): Availability {
   if (utcMs < MIN_EPHEMERIS_MS || utcMs > MAX_EPHEMERIS_MS) return 'approximate'
   if (id === 'sun' || isPlanet(id)) return 'exact'
+  if (knowsMoon(id)) return moonAvailability(id, utcMs)
   if (id === 'ceres') {
     const ceres = ELEMENTS.ceres
     return ceres && Math.abs(msToJd(utcMs) - ceres.epochJd) <= CERES_EXACT_WINDOW_DAYS ? 'exact' : 'approximate'

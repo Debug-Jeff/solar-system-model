@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { expect, test } from 'vitest'
 import { heliocentricEcliptic } from '../ephemeris'
-import { AU_KM, eclipticKmToScene } from './frames'
+import { AU_KM, eclipticKmToScene, eclipticKmVecToScene } from './frames'
 
 test('eclipticKmToScene maps (x, y, z) AU to (x, z, -y) km', () => {
   const v = eclipticKmToScene({ x: 1, y: 2, z: 3 }, new THREE.Vector3())
@@ -24,4 +24,8 @@ test('Earth is about 1 AU from the Sun in km', () => {
   const earth = eclipticKmToScene(heliocentricEcliptic('earth', Date.UTC(2026, 9, 16)), new THREE.Vector3())
   expect(earth.length() / AU_KM).toBeGreaterThan(0.98)
   expect(earth.length() / AU_KM).toBeLessThan(1.02)
+})
+
+test('eclipticKmVecToScene maps km without scaling', () => {
+  expect(eclipticKmVecToScene({ x: 1, y: 2, z: 3 }, new THREE.Vector3()).toArray()).toEqual([1, 3, -2])
 })
