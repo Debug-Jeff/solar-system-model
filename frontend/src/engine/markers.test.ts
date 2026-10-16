@@ -94,3 +94,13 @@ test('setEnabled(false) hides the layer', () => {
   layer.setEnabled(false)
   expect(container.style.display).toBe('none')
 })
+
+test('markers never start browser gestures and a ring-hidden marker lets input through', () => {
+  const layer = createMarkerLayer(container, () => {})
+  layer.update([entry({ radiusKm: 2e5 }), entry({ id: 'x', name: 'Far', worldKm: new THREE.Vector3(3e5, 0, 0), radiusKm: 1 })], camera, 800, 400, null)
+  const big = container.querySelector<HTMLButtonElement>('button[aria-label="Mars"]')!
+  const small = container.querySelector<HTMLButtonElement>('button[aria-label="Far"]')!
+  expect(big.style.touchAction).toBe('none')
+  expect(big.style.pointerEvents).toBe('none')
+  expect(small.style.pointerEvents).toBe('')
+})

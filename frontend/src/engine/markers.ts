@@ -81,6 +81,7 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
     label.textContent = entry.name
     button.append(ring, label)
     button.style.setProperty('--marker-color', entry.color)
+    button.style.touchAction = 'none'
     button.addEventListener('click', () => onSelect(entry.id))
     container.append(button)
     const created = { button, ring, label }
@@ -130,6 +131,7 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
         el.button.style.display = ''
         el.button.style.transform = `translate(${place.x}px, ${place.y}px)`
         el.button.classList.toggle('ring-hidden', place.ringHidden)
+        el.button.style.pointerEvents = place.ringHidden ? 'none' : ''
         el.button.classList.toggle('selected', id === selectedId)
       }
     },
