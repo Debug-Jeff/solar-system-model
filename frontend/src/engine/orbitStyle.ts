@@ -5,6 +5,7 @@ export const ORBIT_OPACITY = { normal: 0.45, selected: 1, moon: 0.5 }
 export const COMET_ORBIT_COLOR = '#7fe0ff'
 export const ASTEROID_ORBIT_COLOR = '#c9a77a'
 export const SPACECRAFT_ORBIT_COLOR = '#4ade80'
+export const SATELLITE_ORBIT_COLOR = '#f472b6'
 const DEFAULT_COLOR = '#8899aa'
 const DWARF_LIGHTNESS = 0.7
 
@@ -27,6 +28,8 @@ export function orbitColor(body: Body, parent: Body | null): OrbitColor {
       return { color: COMET_ORBIT_COLOR, opacity: ORBIT_OPACITY.normal }
     case 'spacecraft':
       return { color: SPACECRAFT_ORBIT_COLOR, opacity: ORBIT_OPACITY.normal }
+    case 'satellite':
+      return { color: SATELLITE_ORBIT_COLOR, opacity: ORBIT_OPACITY.normal }
     case 'asteroid':
       return { color: ASTEROID_ORBIT_COLOR, opacity: ORBIT_OPACITY.normal }
     case 'dwarfPlanet':

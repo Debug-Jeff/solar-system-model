@@ -1,4 +1,4 @@
-export const BODY_TYPES = ['star', 'planet', 'dwarfPlanet', 'moon', 'comet', 'asteroid', 'spacecraft'] as const
+export const BODY_TYPES = ['star', 'planet', 'dwarfPlanet', 'moon', 'comet', 'asteroid', 'spacecraft', 'satellite'] as const
 
 export type BodyType = (typeof BODY_TYPES)[number]
 

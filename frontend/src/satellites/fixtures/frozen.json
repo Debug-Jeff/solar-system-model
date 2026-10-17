@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-17T05:21:05Z",
+  "satellites": [
+    {
+      "id": "iss",
+      "omm": {
+        "OBJECT_NAME": "ISS (ZARYA)",
+        "OBJECT_ID": "1998-067A",
+        "EPOCH": "2026-10-16T18:57:11.728512",
+        "MEAN_MOTION": 15.48899044,
+        "ECCENTRICITY": 0.00067481,
+        "INCLINATION": 51.6326,
+        "RA_OF_ASC_NODE": 58.3278,
+        "ARG_OF_PERICENTER": 271.9059,
+        "MEAN_ANOMALY": 88.1156,
+        "EPHEMERIS_TYPE": 0,
+        "CLASSIFICATION_TYPE": "U",
+        "NORAD_CAT_ID": 25544,
+        "ELEMENT_SET_NO": 999,
+        "REV_AT_EPOCH": 59060,
+        "BSTAR": 0.0001501181,
+        "MEAN_MOTION_DOT": 0.00007803,
+        "MEAN_MOTION_DDOT": 0
+      }
+    },
+    {
+      "id": "hubble",
+      "omm": {
+        "OBJECT_NAME": "HST",
+        "OBJECT_ID": "1990-037B",
+        "EPOCH": "2026-10-16T19:32:54.369888",
+        "MEAN_MOTION": 15.31972242,
+        "ECCENTRICITY": 0.00020493,
+        "INCLINATION": 28.4738,
+        "RA_OF_ASC_NODE": 328.5189,
+        "ARG_OF_PERICENTER": 75.0606,
+        "MEAN_ANOMALY": 285.0217,
+        "EPHEMERIS_TYPE": 0,
+        "CLASSIFICATION_TYPE": "U",
+        "NORAD_CAT_ID": 20580,
+        "ELEMENT_SET_NO": 999,
+        "REV_AT_EPOCH": 80723,
+        "BSTAR": 0.00020539497,
+        "MEAN_MOTION_DOT": 0.00006765,
+        "MEAN_MOTION_DDOT": 0
+      }
+    },
+    {
+      "id": "chandra",
+      "omm": {
+        "OBJECT_NAME": "CXO",
+        "OBJECT_ID": "1999-040B",
+        "EPOCH": "2026-10-18T00:31:16.517280",
+        "MEAN_MOTION": 0.377978,
+        "ECCENTRICITY": 0.7647127,
+        "INCLINATION": 57.8392,
+        "RA_OF_ASC_NODE": 113.5005,
+        "ARG_OF_PERICENTER": 309.0348,
+        "MEAN_ANOMALY": 0.2108,
+        "EPHEMERIS_TYPE": 0,
+        "CLASSIFICATION_TYPE": "U",
+        "NORAD_CAT_ID": 25867,
+        "ELEMENT_SET_NO": 999,
+        "REV_AT_EPOCH": 1778,
+        "BSTAR": 0,
+        "MEAN_MOTION_DOT": 0.00000831,
+        "MEAN_MOTION_DDOT": 0
+      }
+    },
+    {
+      "id": "goes-19",
+      "omm": {
+        "OBJECT_NAME": "GOES 19",
+        "OBJECT_ID": "2024-119A",
+        "EPOCH": "2026-10-16T22:04:32.670912",
+        "MEAN_MOTION": 1.00271909,
+        "ECCENTRICITY": 0.00004526,
+        "INCLINATION": 0.0019,
+        "RA_OF_ASC_NODE": 96.7763,
+        "ARG_OF_PERICENTER": 179.1234,
+        "MEAN_ANOMALY": 5.5129,
+        "EPHEMERIS_TYPE": 0,
+        "CLASSIFICATION_TYPE": "U",
+        "NORAD_CAT_ID": 60133,
+        "ELEMENT_SET_NO": 999,
+        "REV_AT_EPOCH": 818,
+        "BSTAR": 0,
+        "MEAN_MOTION_DOT": -0.00000247,
+        "MEAN_MOTION_DDOT": 0
+      }
+    }
+  ]
+}

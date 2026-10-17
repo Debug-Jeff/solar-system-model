@@ -16,6 +16,7 @@
     "astronomy-engine": "^2.1.19",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "satellite.js": "6.0.2",
     "three": "^0.186.1",
     "zustand": "^5.0.15"
   },

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -257,5 +259,25 @@ func TestFetchGroupFailures(t *testing.T) {
 				t.Fatalf("error leaks the URL: %v", err)
 			}
 		})
+	}
+}
+
+func TestFrontendCatalogueMatchesRegistry(t *testing.T) {
+	src, err := os.ReadFile("../../../frontend/src/satellites/catalogue.ts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalogue := map[string]int{}
+	for _, m := range regexp.MustCompile(`id: '([a-z0-9-]+)', name: '[^']+', norad: ([0-9]+)`).FindAllStringSubmatch(string(src), -1) {
+		n, _ := strconv.Atoi(m[2])
+		catalogue[m[1]] = n
+	}
+	if len(catalogue) != len(Registry) {
+		t.Fatalf("catalogue has %d satellites, registry %d", len(catalogue), len(Registry))
+	}
+	for _, s := range Registry {
+		if catalogue[s.ID] != s.NORAD {
+			t.Errorf("%s: catalogue NORAD %d, registry %d", s.ID, catalogue[s.ID], s.NORAD)
+		}
 	}
 }

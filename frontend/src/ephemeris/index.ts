@@ -1,6 +1,7 @@
 import rawElements from './data/smallBodyElements.json'
 import { elementsOrbitPoints, elementsPosition, periodDays, validateElements } from './kepler'
 import { knowsMoon, moonAvailability } from './moonStore'
+import { knowsSatellite, satelliteAvailability } from '../satellites/store'
 import { PLANET_PERIOD_DAYS, planetPosition } from './planets'
 import {
   KEPLER_IDS,
@@ -105,6 +106,7 @@ export function availability(id: string, utcMs: number): Availability {
   if (utcMs < MIN_EPHEMERIS_MS || utcMs > MAX_EPHEMERIS_MS) return 'approximate'
   if (id === 'sun' || isPlanet(id)) return 'exact'
   if (knowsMoon(id)) return moonAvailability(id, utcMs)
+  if (knowsSatellite(id)) return satelliteAvailability(id, utcMs) ?? 'approximate'
   const entry = registry.get(id)
   if (!entry || entry.kind === 'comet') return 'approximate'
   return Math.abs(msToJd(utcMs) - entry.elements.epochJd) <= EXACT_WINDOW_DAYS[entry.kind] ? 'exact' : 'approximate'

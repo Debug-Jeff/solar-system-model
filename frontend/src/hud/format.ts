@@ -40,6 +40,7 @@ export function formatTemp(celsius: number, locale?: string): string {
 }
 
 export function formatType(type: string): string {
+  if (type === 'satellite') return 'Earth satellite'
   return type.replace(/([a-z])([A-Z])/g, '$1 $2')
 }
 
