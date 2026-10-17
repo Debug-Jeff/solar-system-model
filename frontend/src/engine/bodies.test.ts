@@ -148,3 +148,17 @@ test('a Mars orbiter trail covers one orbit, not weeks of overlapping loops', ()
   expect(first.distanceTo(last)).toBeLessThan(200)
   bodies.dispose()
 })
+
+import { earthOrientation } from './earthOrientation'
+
+test('Earth and its clouds take their real orientation from the sim time', () => {
+  const t = Date.parse('2026-10-17T06:00:00Z')
+  const bodies = createBodies(new THREE.Scene(), data, textures, t)
+  bodies.updateFrame(t + 3_600_000, 1)
+  const earth = bodies.byId.get('earth')!
+  const want = earthOrientation(t + 3_600_000, new THREE.Quaternion())
+  expect(earth.mesh.getWorldQuaternion(new THREE.Quaternion()).angleTo(want)).toBeLessThan(1e-9)
+  const clouds = earth.extraMeshes[0]!.mesh.getWorldQuaternion(new THREE.Quaternion())
+  expect(new THREE.Vector3(0, 1, 0).applyQuaternion(clouds).angleTo(new THREE.Vector3(0, 1, 0).applyQuaternion(want))).toBeLessThan(1e-9)
+  bodies.dispose()
+})

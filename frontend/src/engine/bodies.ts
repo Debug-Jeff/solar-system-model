@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
 import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered, trackCoverage } from '../ephemeris/moonStore'
+import { earthOrientation } from './earthOrientation'
 import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
 import { ORBIT_OPACITY, orbitColor, relativePositions } from './orbitStyle'
@@ -26,6 +27,8 @@ const COMET_GAP_KM = 3e6
 const _tailDir = new THREE.Vector3()
 const _worldPos = new THREE.Vector3()
 const _parentPos = new THREE.Vector3()
+const _drift = new THREE.Quaternion()
+const Y_AXIS = new THREE.Vector3(0, 1, 0)
 
 type RingedId = 'saturn' | 'uranus'
 const RING_SPANS: Record<RingedId, { inner: number; outer: number }> = {
@@ -41,6 +44,7 @@ export interface ExtraMesh {
   mesh: THREE.Mesh
   radiusMultiplier: number
   spinFactor: number
+  driftRad: number
 }
 
 export interface BodyEntry {
@@ -66,6 +70,7 @@ export interface BodyEntry {
   initialTheta: number
   angularSpeedPerSimHour: number
   spinRadPerSimHour: number
+  oriented: boolean
   radiusKm: number
   semiMajorAxisKm: number
   eccentricity: number
@@ -289,7 +294,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     const pivot = new THREE.Object3D()
     orbitFrame.add(pivot)
     const tiltGroup = new THREE.Object3D()
-    tiltGroup.rotation.z = degToRad(body.axialTiltDeg || 0)
+    const oriented = body.id === 'earth'
+    if (!oriented) tiltGroup.rotation.z = degToRad(body.axialTiltDeg || 0)
     pivot.add(tiltGroup)
 
     const radiusKm = body.type === 'star' ? SUN_RADIUS_KM : body.radiusKm
@@ -313,12 +319,12 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
         })
       )
       tiltGroup.add(clouds)
-      extraMeshes.push({ mesh: clouds, radiusMultiplier: 1.004, spinFactor: 1.15 })
+      extraMeshes.push({ mesh: clouds, radiusMultiplier: 1.004, spinFactor: 1.15, driftRad: 0 })
     }
     if (isRinged(body.id)) {
       const ring = buildRing(body.id, textures)
       tiltGroup.add(ring)
-      extraMeshes.push({ mesh: ring, radiusMultiplier: 1, spinFactor: 0 })
+      extraMeshes.push({ mesh: ring, radiusMultiplier: 1, spinFactor: 0, driftRad: 0 })
     }
     for (const extra of extraMeshes) extra.mesh.scale.setScalar(radiusKm * extra.radiusMultiplier)
 
@@ -371,6 +377,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
           ? 0
           : ((body.retrograde ? -1 : 1) * (2 * Math.PI)) / (body.orbitalPeriodDays * 24),
       spinRadPerSimHour: spinRadPerSimHour(body.rotationPeriodHours),
+      oriented,
       radiusKm,
       semiMajorAxisKm: parentEntry ? (body.distanceFromParentKm ?? 0) : (body.distanceFromSunAU ?? 0) * 149_597_870.7,
       eccentricity: Math.min(Math.max(body.orbitalEccentricity ?? 0, 0), 0.99),
@@ -466,6 +473,14 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       if (entry.type !== 'star') {
         placeAt(entry, simTimeMs)
         if (entry.ephemerisId && !(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < ORBIT_REBUILD_MS)) rebuildOrbit(entry, simTimeMs)
+      }
+      if (entry.oriented) {
+        earthOrientation(simTimeMs, entry.mesh.quaternion)
+        for (const extra of entry.extraMeshes) {
+          extra.driftRad = (extra.driftRad + entry.spinRadPerSimHour * (extra.spinFactor - 1) * deltaSimHours) % (2 * Math.PI)
+          extra.mesh.quaternion.copy(entry.mesh.quaternion).multiply(_drift.setFromAxisAngle(Y_AXIS, extra.driftRad))
+        }
+        continue
       }
       entry.mesh.rotation.y += entry.spinRadPerSimHour * deltaSimHours
       for (const extra of entry.extraMeshes) {
