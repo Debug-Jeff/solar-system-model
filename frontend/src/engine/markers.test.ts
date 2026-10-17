@@ -104,3 +104,9 @@ test('markers never start browser gestures and a ring-hidden marker lets input t
   expect(big.style.pointerEvents).toBe('none')
   expect(small.style.pointerEvents).toBe('')
 })
+
+test('a hidden entry gets no marker', () => {
+  const layer = createMarkerLayer(container, () => {})
+  layer.update([entry({ hidden: true })], camera, 800, 400, null)
+  expect(container.querySelector<HTMLButtonElement>('button[aria-label="Mars"]')!.style.display).toBe('none')
+})

@@ -8,6 +8,7 @@ import { flyToDistance } from './flyTo'
 import { createFollowController } from './follow'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
+import { coverageActions } from './coverage'
 import { clampOutsideSphere } from './pathFix'
 import { projectedRadiusPx } from './projection'
 import { createScene, INITIAL_CAMERA_POSITION } from './scene'
@@ -66,6 +67,17 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   }
 
   const requestedSets = new Set<string>()
+  let disposed = false
+
+  function requestSet(set: string): void {
+    if (requestedSets.has(set)) return
+    requestedSets.add(set)
+    void loadEphemSet(set, { onUpdate: registerSet }).then((loaded) => {
+      if (loaded && !disposed) registerSet(loaded)
+    })
+  }
+
+  requestSet('spacecraft')
 
   function loadMoonSystems(selectedId: string | null, viewportHeight: number): void {
     const fovY = THREE.MathUtils.degToRad(camera.fov)
@@ -75,10 +87,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       bodies.getBodyWorldPos(system.planetId, _planetPos)
       const px = projectedRadiusPx(system.outerOrbitKm, camera.position.distanceTo(_planetPos), fovY, viewportHeight)
       if (!selected && !moonVisible(px)) continue
-      requestedSets.add(system.set)
-      void loadEphemSet(system.set, { onUpdate: registerSet }).then((set) => {
-        if (set && !disposed) registerSet(set)
-      })
+      requestSet(system.set)
     }
   }
 
@@ -156,8 +165,6 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   const timer = new THREE.Timer()
   timer.connect(document)
   let frame = 0
-  let disposed = false
-
   function tick(timestamp: number): void {
     frame = requestAnimationFrame(tick)
     timer.update(timestamp)
@@ -178,6 +185,9 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     const height = renderer.domElement.clientHeight
     bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
     loadMoonSystems(state.selectedId, height)
+    const lost = coverageActions(state.selectedId, state.followId, (id) => bodies.byId.get(id)?.type === 'spacecraft' && !bodies.byId.get(id)!.pivot.visible)
+    if (lost.deselect) state.select(null)
+    if (lost.stopFollow) state.stopFollow()
     markers.update(bodies.markerEntries, camera, renderer.domElement.clientWidth, height, state.selectedId)
     renderer.render(scene, camera)
   }

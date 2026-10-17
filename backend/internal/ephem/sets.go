@@ -34,7 +34,7 @@ var Sets = map[string][]BodySpec{
 		moon("europa", "502", "500@599", "jupiter", 3.551181),
 		moon("ganymede", "503", "500@599", "jupiter", 7.154553),
 		moon("callisto", "504", "500@599", "jupiter", 16.689017),
-		craft("juno", "-61", "500@599", "jupiter", 10, 10),
+		craft("juno-probe", "-61", "500@599", "jupiter", 10, 10),
 	},
 	"moons-saturn": {
 		moon("mimas", "601", "500@699", "saturn", 0.942422),

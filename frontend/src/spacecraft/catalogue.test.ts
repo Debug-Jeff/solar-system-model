@@ -10,7 +10,7 @@ test('spacecraft is an allowed set', () => {
 })
 
 test('every catalogued craft has a track in the generated data, and vice versa', () => {
-  const tracked = new Set([...trackedIds(), 'jwst', 'mro', 'juno'])
+  const tracked = new Set([...trackedIds(), 'jwst', 'mro', 'juno-probe'])
   for (const craft of SPACECRAFT) expect(tracked.has(craft.id), craft.id).toBe(true)
   for (const id of trackedIds()) expect(SPACECRAFT.some((c) => c.id === id), id).toBe(true)
 })
@@ -25,4 +25,16 @@ test('records are well-formed spacecraft bodies', () => {
     expect(r.mission?.launched).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(r.facts.length).toBeGreaterThan(0)
   }
+})
+
+import planets from '../../../backend/data/planets.json'
+import smallBodies from '../../public/data/smallbodies.json'
+
+test('spacecraft ids never collide with planets, moons, small bodies or NEOs', () => {
+  const taken = new Set<string>([
+    ...planets.bodies.map((b: { id: string }) => b.id),
+    ...smallBodies.named.map((b: { id: string }) => b.id),
+    ...smallBodies.neos.map((b: { id: string }) => b.id),
+  ])
+  for (const craft of SPACECRAFT) expect(taken.has(craft.id), craft.id).toBe(false)
 })

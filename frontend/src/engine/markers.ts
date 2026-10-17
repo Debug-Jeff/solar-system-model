@@ -18,6 +18,7 @@ export interface MarkerEntry {
   radiusKm: number
   parentId: string | null
   orbitRadiusKm: number
+  hidden?: boolean
 }
 
 export interface MarkerRect {
@@ -101,7 +102,7 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
         const distance = camera.position.distanceTo(entry.worldKm)
         const tinyMoonSystem =
           entry.type === 'moon' && !selected && !moonVisible(projectedRadiusPx(entry.orbitRadiusKm, distance, fovY, height))
-        if (!projection.visible || tinyMoonSystem) {
+        if (entry.hidden || !projection.visible || tinyMoonSystem) {
           el.button.style.display = 'none'
           continue
         }

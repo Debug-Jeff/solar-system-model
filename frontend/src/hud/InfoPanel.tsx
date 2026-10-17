@@ -1,6 +1,13 @@
 import { availability } from '../ephemeris'
+import { bodyHelioKm, distanceKm, earthHelioKm } from '../spacecraft/position'
 import { formatDistance, formatNumber, formatOptional, formatPeriod, formatRadius, formatRotation, formatSimDate, formatTemp, formatType } from './format'
 import { useAppStore, type StoreProps } from './useAppStore'
+
+const AU_KM = 149_597_870.7
+
+function formatRange(km: number): string {
+  return km < 0.1 * AU_KM ? `${formatNumber(km)} km` : `${formatNumber(km / AU_KM, 3)} AU`
+}
 
 export function InfoPanel({ store }: StoreProps) {
   const body = useAppStore(store, (s) => s.bodies.find((b) => b.id === s.selectedId) ?? null)
@@ -9,7 +16,26 @@ export function InfoPanel({ store }: StoreProps) {
     s.selectedId ? (availability(s.selectedId, s.simTimeMs) === 'exact' ? 'Accurate' : 'Approximate') : null
   )
 
-  const stats: [string, string][] = body
+  const ranges = useAppStore(store, (s) => {
+    const b = s.bodies.find((x) => x.id === s.selectedId)
+    if (!b || b.type !== 'spacecraft') return null
+    const helio = bodyHelioKm(b.parent, b.id, s.simTimeMs)
+    if (!helio) return '—|—'
+    return `${formatRange(Math.hypot(helio.x, helio.y, helio.z))}|${formatRange(distanceKm(helio, earthHelioKm(s.simTimeMs)))}`
+  })
+
+  const spacecraftStats: [string, string][] =
+    body?.type === 'spacecraft'
+      ? [
+          ['Mission', body.mission?.description ?? '—'],
+          ['Launched', body.mission ? formatSimDate(Date.parse(`${body.mission.launched}T00:00:00Z`)) : '—'],
+          ['From the Sun', ranges?.split('|')[0] ?? '—'],
+          ['From Earth', ranges?.split('|')[1] ?? '—'],
+          ['Position', position ?? '—'],
+        ]
+      : []
+
+  const stats: [string, string][] = body?.type === 'spacecraft' ? spacecraftStats : body
     ? [
         ['Radius', formatRadius(body.radiusKm)],
         [body.type === 'asteroid' || body.type === 'comet' ? 'Semi-major axis' : 'Distance', formatDistance(body)],

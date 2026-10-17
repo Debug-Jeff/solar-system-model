@@ -58,3 +58,17 @@ test('small bodies show real radius in metres, semi-major axis, and dashes for u
   expect(screen.getByText('Axial tilt').parentElement).toHaveTextContent('—')
   expect(screen.getByText('Moons').parentElement).toHaveTextContent('—')
 })
+
+test('a spacecraft shows its mission, launch date and live distances', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 16))
+  store.getState().setBodies([
+    { ...base, id: 'voyager-1', name: 'Voyager 1', type: 'spacecraft', parent: 'sun', radiusKm: 0.01, rotationPeriodHours: 0, axialTiltDeg: Number.NaN, meanTempC: Number.NaN, moonCount: Number.NaN, mission: { launched: '1977-09-05', description: 'Grand tour, now interstellar' } },
+  ])
+  store.getState().select('voyager-1')
+  render(<InfoPanel store={store} />)
+  expect(screen.getByText('Mission').parentElement).toHaveTextContent('Grand tour, now interstellar')
+  expect(screen.getByText('Launched').parentElement).toHaveTextContent('Sep 5, 1977')
+  expect(screen.queryByText('Radius')).toBeNull()
+  expect(screen.queryByText('Moons')).toBeNull()
+  expect(screen.getByText('From the Sun').parentElement).toHaveTextContent('—')
+})
