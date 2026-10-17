@@ -45,3 +45,16 @@ test('a near-Earth object shows its close approach', () => {
   expect(screen.getByText('Rotation').parentElement).toHaveTextContent('—')
   expect(screen.getByText('Mean temp').parentElement).toHaveTextContent('—')
 })
+
+test('small bodies show real radius in metres, semi-major axis, and dashes for unknowns', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 16))
+  store.getState().setBodies([
+    { ...base, id: 'bennu', name: 'Bennu', type: 'asteroid', radiusKm: 0.245, distanceFromSunAU: 1.126, axialTiltDeg: Number.NaN, moonCount: Number.NaN, meanTempC: Number.NaN, rotationPeriodHours: 0 },
+  ])
+  store.getState().select('bennu')
+  render(<InfoPanel store={store} />)
+  expect(screen.getByText('Radius').parentElement).toHaveTextContent('245 m')
+  expect(screen.getByText('Semi-major axis').parentElement).toHaveTextContent('1.126 AU')
+  expect(screen.getByText('Axial tilt').parentElement).toHaveTextContent('—')
+  expect(screen.getByText('Moons').parentElement).toHaveTextContent('—')
+})

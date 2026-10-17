@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,8 @@ type fakeJPL struct {
 	failBody   string
 	queryRows  int
 	neoObjects int
+	diameter   string
+	alias      map[string]string
 }
 
 func (f *fakeJPL) server(t *testing.T) *httptest.Server {
@@ -45,7 +48,17 @@ func (f *fakeJPL) server(t *testing.T) *httptest.Server {
 				http.Error(w, "nope", http.StatusInternalServerError)
 				return
 			}
-			_, _ = fmt.Fprintf(w, `{"object":{"fullname":"X %s"},"orbit":{"epoch":"2461200.5","elements":[{"name":"e","value":"0.1"},{"name":"a","value":"2.5"},{"name":"i","value":"5"},{"name":"om","value":"10"},{"name":"w","value":"20"},{"name":"ma","value":"30"},{"name":"n","value":"0.25"}]},"phys_par":[{"name":"diameter","value":"52.4"}]}`, sstr)
+			if target, ok := f.alias[sstr]; ok {
+				sstr = target
+			}
+			diameter := f.diameter
+			if diameter == "" {
+				diameter = "52.4"
+			}
+			h := fnv.New32a()
+			_, _ = h.Write([]byte(sstr))
+			a := 1 + float64(h.Sum32()%100000)/100000
+			_, _ = fmt.Fprintf(w, `{"object":{"fullname":"X %s"},"orbit":{"epoch":"2461200.5","elements":[{"name":"e","value":"0.1"},{"name":"a","value":"%g"},{"name":"i","value":"5"},{"name":"om","value":"10"},{"name":"w","value":"20"},{"name":"ma","value":"30"},{"name":"n","value":"0.25"}]},"phys_par":[{"name":"diameter","value":"%s"}]}`, sstr, a, diameter)
 		case "/neo/rest/v1/feed":
 			f.neoCalls.Add(1)
 			if f.neoStatus != 0 {
@@ -167,5 +180,28 @@ func TestSmallBodiesFitBudget(t *testing.T) {
 	encoded, _ := json.Marshal(file)
 	if len(encoded) > 600_000 {
 		t.Fatalf("smallbodies.json would be %d bytes", len(encoded))
+	}
+}
+
+func TestSmallRadiusKeepsThreeSignificantFigures(t *testing.T) {
+	s, n := clients(t, &fakeJPL{diameter: "0.49"})
+	file, err := BuildSmallBodies(context.Background(), s, n, "", sbNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if file.Named[0].RadiusKm != 0.245 {
+		t.Fatalf("radius = %v, want 0.245", file.Named[0].RadiusKm)
+	}
+}
+
+func TestNeosAreDeduplicated(t *testing.T) {
+	f := &fakeJPL{neoObjects: 6, alias: map[string]string{"3000001": "3000000", "3000003": "4"}}
+	s, n := clients(t, f)
+	file, err := BuildSmallBodies(context.Background(), s, n, "K", sbNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Neos) != 4 {
+		t.Fatalf("expected 4 unique NEOs (one alias, one named), got %d", len(file.Neos))
 	}
 }

@@ -1,5 +1,5 @@
 import { availability } from '../ephemeris'
-import { formatDistance, formatNumber, formatPeriod, formatRotation, formatSimDate, formatTemp, formatType } from './format'
+import { formatDistance, formatNumber, formatOptional, formatPeriod, formatRadius, formatRotation, formatSimDate, formatTemp, formatType } from './format'
 import { useAppStore, type StoreProps } from './useAppStore'
 
 export function InfoPanel({ store }: StoreProps) {
@@ -11,13 +11,13 @@ export function InfoPanel({ store }: StoreProps) {
 
   const stats: [string, string][] = body
     ? [
-        ['Radius', `${formatNumber(body.radiusKm)} km`],
-        ['Distance', formatDistance(body)],
+        ['Radius', formatRadius(body.radiusKm)],
+        [body.type === 'asteroid' || body.type === 'comet' ? 'Semi-major axis' : 'Distance', formatDistance(body)],
         ['Orbital period', body.type === 'star' ? '—' : formatPeriod(body.orbitalPeriodDays)],
         ['Rotation', formatRotation(body.rotationPeriodHours)],
-        ['Axial tilt', `${formatNumber(body.axialTiltDeg, 1)}°`],
+        ['Axial tilt', formatOptional(body.axialTiltDeg, (v) => `${formatNumber(v, 1)}°`)],
         ['Mean temp', formatTemp(body.meanTempC)],
-        ['Moons', formatNumber(body.moonCount)],
+        ['Moons', formatOptional(body.moonCount, (v) => formatNumber(v))],
         ['Position', position ?? '—'],
         ...(body.neo
           ? ([

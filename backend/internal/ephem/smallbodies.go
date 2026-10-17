@@ -258,6 +258,18 @@ func (n *NeoWs) Feed(ctx context.Context, key string, start, end time.Time) ([]N
 	return out, nil
 }
 
+func sigFigs(v float64, digits int) float64 {
+	r, err := strconv.ParseFloat(strconv.FormatFloat(v, 'g', digits, 64), 64)
+	if err != nil {
+		return v
+	}
+	return r
+}
+
+func orbitKey(el Elements) string {
+	return fmt.Sprintf("%.5f/%.5f/%.3f/%.3f/%.3f", el.A, el.E, el.I, el.Om, el.W)
+}
+
 func roundElements(el Elements) Elements {
 	return Elements{EpochJD: el.EpochJD, A: round(el.A, 1e8), E: round(el.E, 1e8), I: round(el.I, 1e6), Om: round(el.Om, 1e6), W: round(el.W, 1e6), Ma: round(el.Ma, 1e6), N: round(el.N, 1e10)}
 }
@@ -280,7 +292,7 @@ func BuildSmallBodies(ctx context.Context, sbdb *SBDB, neows *NeoWs, key string,
 		if radius == 0 {
 			radius = defaultRadiusKm[spec.Type]
 		}
-		file.Named = append(file.Named, NamedBody{ID: spec.ID, Name: spec.Name, Type: spec.Type, Designation: spec.Designation, RadiusKm: round(radius, 10), Elements: roundElements(el)})
+		file.Named = append(file.Named, NamedBody{ID: spec.ID, Name: spec.Name, Type: spec.Type, Designation: spec.Designation, RadiusKm: sigFigs(radius, 3), Elements: roundElements(el)})
 	}
 	mainRows, err := sbdb.Query(ctx, "MBA", mainBeltLimit)
 	if err != nil {
@@ -303,6 +315,10 @@ func BuildSmallBodies(ctx context.Context, sbdb *SBDB, neows *NeoWs, key string,
 		log.Printf("small bodies: %v", err)
 		return file, nil
 	}
+	seen := map[string]bool{}
+	for _, b := range file.Named {
+		seen[orbitKey(b.Elements)] = true
+	}
 	for _, a := range approaches {
 		if len(file.Neos) == maxNeos {
 			break
@@ -313,6 +329,11 @@ func BuildSmallBodies(ctx context.Context, sbdb *SBDB, neows *NeoWs, key string,
 			continue
 		}
 		a.Elements = roundElements(el)
+		if key := orbitKey(a.Elements); seen[key] {
+			continue
+		} else {
+			seen[key] = true
+		}
 		file.Neos = append(file.Neos, a)
 	}
 	return file, nil

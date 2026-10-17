@@ -25,6 +25,16 @@ export function formatDistance(body: Body, locale?: string): string {
   return `${formatNumber(body.distanceFromSunAU ?? 0, 3, locale)} AU`
 }
 
+export function formatRadius(radiusKm: number, locale?: string): string {
+  const sig = (v: number) => Number(v.toPrecision(3))
+  if (radiusKm < 1) return `${formatNumber(sig(radiusKm * 1000), 1, locale)} m`
+  return `${formatNumber(radiusKm >= 1000 ? Math.round(radiusKm) : sig(radiusKm), 1, locale)} km`
+}
+
+export function formatOptional(value: number, format: (v: number) => string): string {
+  return Number.isFinite(value) ? format(value) : '—'
+}
+
 export function formatTemp(celsius: number, locale?: string): string {
   return Number.isFinite(celsius) ? `${formatNumber(celsius, 0, locale)}°C` : '—'
 }
