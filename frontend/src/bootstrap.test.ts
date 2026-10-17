@@ -37,7 +37,7 @@ test('success sets bodies then creates engine', async () => {
   const store = createAppStore()
   const bodies = [{ id: 'sun' }] as Body[]
   const createEngine = vi.fn(() => {
-    expect(store.getState().bodies).toBe(bodies)
+    expect(store.getState().bodies.filter((b) => b.type !== 'spacecraft')).toEqual(bodies)
     return { dispose: () => {} }
   })
   await startApp({ store, fetchPlanets: async () => bodies, createEngine, isDev: false })
@@ -52,7 +52,7 @@ test('a missing small-bodies file still starts the engine with planets.json bodi
   const createEngine = vi.fn(() => ({ dispose: () => {} }))
   await startApp({ store, fetchPlanets: async () => bodies, fetchSmallBodies: async () => null, createEngine, isDev: false })
   expect(createEngine).toHaveBeenCalled()
-  expect(store.getState().bodies.map((b) => b.id)).toEqual(['sun'])
+  expect(store.getState().bodies.filter((b) => b.type !== 'spacecraft').map((b) => b.id)).toEqual(['sun'])
 })
 
 test('small bodies are appended and duplicates of planets.json are dropped', async () => {
@@ -68,9 +68,17 @@ test('small bodies are appended and duplicates of planets.json are dropped', asy
     belts: { main: { count: 0, rows: new Float64Array(0) }, kuiper: { count: 0, rows: new Float64Array(0) } },
   }
   await startApp({ store, fetchPlanets: async () => [{ id: 'sun', name: 'Sun' }] as Body[], fetchSmallBodies: async () => smallBodies, createEngine: vi.fn(() => ({ dispose: () => {} })), isDev: false })
-  const ids = store.getState().bodies.map((b) => b.id)
+  const ids = store.getState().bodies.filter((b) => b.type !== 'spacecraft').map((b) => b.id)
   expect(ids).toEqual(['sun', 'vesta', 'neo-1'])
   expect(store.getState().bodies.find((b) => b.id === 'sun')!.name).toBe('Sun')
   expect(store.getState().bodies.find((b) => b.id === 'neo-1')!.neo?.hazardous).toBe(true)
   expect(warn).toHaveBeenCalled()
+})
+
+test('spacecraft from the catalogue are added to the bodies', async () => {
+  const store = createAppStore()
+  await startApp({ store, fetchPlanets: async () => [{ id: 'sun', name: 'Sun' }] as Body[], createEngine: vi.fn(() => ({ dispose: () => {} })), isDev: false })
+  const craft = store.getState().bodies.filter((b) => b.type === 'spacecraft')
+  expect(craft.map((b) => b.id)).toContain('parker')
+  expect(craft.find((b) => b.id === 'jwst')!.parent).toBe('earth')
 })

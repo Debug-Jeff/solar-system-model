@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { BodyType } from '../types/body'
 import { projectedRadiusPx, projectToScreen } from './projection'
 
-export const MARKER_PRIORITY: Record<BodyType, number> = { star: 5, planet: 4, dwarfPlanet: 3, comet: 2, asteroid: 2, moon: 1 }
+export const MARKER_PRIORITY: Record<BodyType, number> = { star: 5, planet: 4, dwarfPlanet: 3, comet: 2, asteroid: 2, spacecraft: 2, moon: 1 }
 const MOON_MIN_ORBIT_PX = 24
 const RING_HIDE_RADIUS_PX = 8
 const RING_OFFSET_PX = 11

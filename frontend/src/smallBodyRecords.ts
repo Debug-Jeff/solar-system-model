@@ -30,6 +30,20 @@ function neoRecord(n: NeoApproach): Body {
   }
 }
 
+export function appendUnique(base: Body[], records: Body[]): Body[] {
+  const ids = new Set(base.map((b) => b.id))
+  const out = [...base]
+  for (const record of records) {
+    if (ids.has(record.id)) {
+      console.warn(`${record.id} duplicates an existing body; keeping the original`)
+      continue
+    }
+    ids.add(record.id)
+    out.push(record)
+  }
+  return out
+}
+
 export function mergeSmallBodies(base: Body[], data: SmallBodiesData): Body[] {
   const ids = new Set(base.map((b) => b.id))
   const out = [...base]
