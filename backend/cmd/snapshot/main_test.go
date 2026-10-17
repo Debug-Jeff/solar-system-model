@@ -8,9 +8,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"solarsystem/backend/internal/celestrak"
 	"solarsystem/backend/internal/ephem"
 )
 
@@ -101,5 +103,66 @@ func TestRunRejectsHyperbolicElements(t *testing.T) {
 	}
 	if _, err := os.Stat(opts.ElementsPath); !os.IsNotExist(err) {
 		t.Fatal("elements file should not exist after rejection")
+	}
+}
+
+type fakeGroups struct{ fail bool }
+
+func (f fakeGroups) FetchGroup(_ context.Context, group string) ([]celestrak.OMM, error) {
+	if f.fail {
+		return nil, errors.New("celestrak down")
+	}
+	var out []celestrak.OMM
+	for _, s := range celestrak.Registry {
+		if s.Group == group {
+			out = append(out, celestrak.OMM{
+				ObjectName: "SAT", ObjectID: "2000-001A", Epoch: "2026-10-15T00:00:00.000000",
+				MeanMotion: 15, Eccentricity: 0.001, Inclination: 51, RAOfAscNode: 10, ArgOfPericenter: 20, MeanAnomaly: 30,
+				ClassificationType: "U", NoradCatID: s.NORAD, ElementSetNo: 999,
+			})
+		}
+	}
+	return out, nil
+}
+
+func TestRunWritesSatellites(t *testing.T) {
+	celestrak.FetchGap = 0
+	opts := options(t, fakeVectors{}, fakeSBDB(t, "0.0797"))
+	opts.SatellitesPath = filepath.Join(t.TempDir(), "satellites.json")
+	opts.Satellites = fakeGroups{}
+	if err := Run(context.Background(), opts); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(opts.SatellitesPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var file celestrak.File
+	if err := json.Unmarshal(raw, &file); err != nil || len(file.Satellites) != len(celestrak.Registry) {
+		t.Fatalf("bad satellites file %v", err)
+	}
+}
+
+func TestSatelliteFailureKeepsTheOldFileAndTheRestOfTheSnapshot(t *testing.T) {
+	celestrak.FetchGap = 0
+	opts := options(t, fakeVectors{}, fakeSBDB(t, "0.0797"))
+	opts.SatellitesPath = filepath.Join(t.TempDir(), "satellites.json")
+	opts.Satellites = fakeGroups{}
+	if err := Run(context.Background(), opts); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := os.ReadFile(opts.SatellitesPath)
+	opts.Satellites = fakeGroups{fail: true}
+	opts.Now = opts.Now.Add(24 * time.Hour)
+	if err := Run(context.Background(), opts); err != nil {
+		t.Fatalf("a CelesTrak outage must not fail the snapshot: %v", err)
+	}
+	after, _ := os.ReadFile(opts.SatellitesPath)
+	if string(before) != string(after) {
+		t.Fatal("satellites file changed after a failed build")
+	}
+	set, _ := os.ReadFile(filepath.Join(opts.OutDir, "moons-earth.json"))
+	if !strings.Contains(string(set), "2026-10-17") {
+		t.Fatal("the rest of the snapshot should still refresh")
 	}
 }

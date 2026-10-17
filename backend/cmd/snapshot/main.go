@@ -11,18 +11,21 @@ import (
 	"sort"
 	"time"
 
+	"solarsystem/backend/internal/celestrak"
 	"solarsystem/backend/internal/ephem"
 )
 
 type Options struct {
-	OutDir       string
-	ElementsPath string
-	Vectors      ephem.VectorSource
-	SBDB         *ephem.SBDB
-	SmallBodies  string
-	NeoWs        *ephem.NeoWs
-	NasaKey      string
-	Now          time.Time
+	OutDir         string
+	ElementsPath   string
+	Vectors        ephem.VectorSource
+	SBDB           *ephem.SBDB
+	SmallBodies    string
+	NeoWs          *ephem.NeoWs
+	NasaKey        string
+	Satellites     celestrak.GroupSource
+	SatellitesPath string
+	Now            time.Time
 }
 
 type pendingFile struct {
@@ -76,6 +79,15 @@ func Run(ctx context.Context, opts Options) error {
 		pending = append(pending, pendingFile{opts.SmallBodies, encoded})
 	}
 
+	if opts.SatellitesPath != "" && opts.Satellites != nil {
+		sats, err := celestrak.Build(ctx, opts.Satellites, opts.Now)
+		if err != nil {
+			log.Printf("satellites skipped, keeping the existing file: %v", err)
+		} else if encoded, err := json.Marshal(sats); err == nil {
+			pending = append(pending, pendingFile{opts.SatellitesPath, encoded})
+		}
+	}
+
 	return writeAll(pending)
 }
 
@@ -117,20 +129,23 @@ func removeAll(paths []string) {
 func main() {
 	out := flag.String("out", "../frontend/public/data/ephem", "directory for ephemeris set files")
 	smallBodies := flag.String("smallbodies", "../frontend/public/data/smallbodies.json", "small-bodies file (empty to skip)")
+	satellites := flag.String("satellites", "../frontend/public/data/satellites.json", "satellites file (empty to skip)")
 	elementsPath := flag.String("elements", "../frontend/src/ephemeris/data/smallBodyElements.json", "small-body elements file")
 	flag.Parse()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	err := Run(ctx, Options{
-		OutDir:       *out,
-		ElementsPath: *elementsPath,
-		Vectors:      ephem.NewHorizons(),
-		SBDB:         ephem.NewSBDB(),
-		SmallBodies:  *smallBodies,
-		NeoWs:        ephem.NewNeoWs(),
-		NasaKey:      os.Getenv("NASA_API_KEY"),
-		Now:          time.Now(),
+		OutDir:         *out,
+		ElementsPath:   *elementsPath,
+		Vectors:        ephem.NewHorizons(),
+		SBDB:           ephem.NewSBDB(),
+		SmallBodies:    *smallBodies,
+		NeoWs:          ephem.NewNeoWs(),
+		NasaKey:        os.Getenv("NASA_API_KEY"),
+		Satellites:     celestrak.New(),
+		SatellitesPath: *satellites,
+		Now:            time.Now(),
 	})
 	if err != nil {
 		log.Fatalf("snapshot failed: %v", err)

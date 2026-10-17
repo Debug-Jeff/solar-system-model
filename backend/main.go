@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"solarsystem/backend/internal/celestrak"
 	"solarsystem/backend/internal/config"
 	"solarsystem/backend/internal/diskcache"
 	"solarsystem/backend/internal/ephem"
@@ -24,6 +25,7 @@ func main() {
 
 	deps := handlers.New(nasa.NewClient(cfg.NasaAPIKey), diskcache.New("cache"), planetsJSON)
 	deps.Horizons = ephem.NewHorizons()
+	deps.Celestrak = celestrak.New()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", deps.Health)
@@ -33,6 +35,7 @@ func main() {
 	mux.HandleFunc("GET /api/epic/image", deps.EpicImage)
 	mux.HandleFunc("GET /api/gibs/earth-texture", deps.Gibs)
 	mux.HandleFunc("GET /api/ephem/{set}", deps.Ephem)
+	mux.HandleFunc("GET /api/satellites", deps.Satellites)
 
 	limiter := ratelimit.New(rate.Limit(2), 20, cfg.ClientIPHeader)
 	handler := handlers.Logging(handlers.CORS(limiter.Middleware(mux)))
