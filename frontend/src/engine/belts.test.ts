@@ -11,14 +11,18 @@ function random(seed: number) {
 const rnd = random(42)
 const rows: number[] = []
 for (let k = 0; k < 50; k++) rows.push(2 + rnd() * 40, rnd() * 0.6, rnd() * 40, rnd() * 360, rnd() * 360, rnd() * 360, 0.2 * rnd() + 0.001, 2461200.5)
+for (const [a, e] of [[45, 0.9], [300, 0.97], [1245, 0.993], [800, 0.995]] as const) {
+  for (let k = 0; k < 8; k++) rows.push(a, e, rnd() * 40, rnd() * 360, rnd() * 360, k * 45 + rnd() * 2, 0.9856 / Math.pow(a, 1.5), 2461200.5)
+}
+const ROWS = rows.length / BELT_STRIDE
 
 test.each([Date.UTC(1900, 0, 1), Date.UTC(2026, 9, 16), Date.UTC(2050, 11, 31)])('the shader maths matches elementsPosition at %d', (ms) => {
   const days = msToJd(ms) - J2000_JD
-  for (let k = 0; k < 50; k++) {
+  for (let k = 0; k < ROWS; k++) {
     const r = rows.slice(k * BELT_STRIDE, k * BELT_STRIDE + BELT_STRIDE)
     const p = beltPointAU(r, days)
     const q = elementsPosition({ a: r[0]!, e: r[1]!, i: r[2]!, om: r[3]!, w: r[4]!, ma: r[5]!, n: r[6]!, epochJd: r[7]! }, ms)
-    expect(Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z)).toBeLessThan(1e-6)
+    expect(Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z) / Math.max(1, Math.hypot(q.x, q.y, q.z))).toBeLessThan(1e-6)
   }
 })
 

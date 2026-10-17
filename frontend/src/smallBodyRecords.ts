@@ -15,9 +15,9 @@ function namedRecord(b: NamedSmallBody): Body {
     orbitalInclinationDeg: b.elements.i,
     orbitalPeriodDays: 360 / b.elements.n,
     rotationPeriodHours: 0,
-    axialTiltDeg: 0,
+    axialTiltDeg: Number.NaN,
     meanTempC: Number.NaN,
-    moonCount: 0,
+    moonCount: Number.NaN,
     color: COLORS[b.type],
     facts: [],
   }

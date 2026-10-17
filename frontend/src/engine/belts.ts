@@ -4,7 +4,7 @@ import { msToJd, type Vec3 } from '../ephemeris/types'
 import { AU_KM } from './frames'
 
 export const J2000_JD = 2451545
-const NEWTON_STEPS = 6
+const NEWTON_STEPS = 15
 const DEG = Math.PI / 180
 const TWO_PI = Math.PI * 2
 
@@ -70,6 +70,8 @@ void main() {
   vec2 d = gl_PointCoord - 0.5;
   if (dot(d, d) > 0.25) discard;
   gl_FragColor = vec4(uColor, 0.8);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }
 `
 
