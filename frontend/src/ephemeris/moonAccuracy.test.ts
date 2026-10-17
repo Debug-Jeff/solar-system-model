@@ -4,6 +4,7 @@ import earthSet from './fixtures/moons-frozen/moons-earth.json'
 import jupiterSet from './fixtures/moons-frozen/moons-jupiter.json'
 import marsSet from './fixtures/moons-frozen/moons-mars.json'
 import reference from './fixtures/moons-frozen/reference.json'
+import spacecraftSet from './fixtures/moons-frozen/spacecraft.json'
 import { parseEphemSet, sampledPosition } from './sampled'
 import { UNIX_EPOCH_JD, type Vec3 } from './types'
 
@@ -18,12 +19,15 @@ const tracks = {
   moon: parseEphemSet(earthSet, 'moons-earth').bodies.moon!,
   phobos: parseEphemSet(marsSet, 'moons-mars').bodies.phobos!,
   io: parseEphemSet(jupiterSet, 'moons-jupiter').bodies.io!,
+  parker: parseEphemSet(spacecraftSet, 'spacecraft').bodies.parker!,
+  juno: parseEphemSet(jupiterSet, 'moons-jupiter').bodies.juno!,
+  jwst: parseEphemSet(earthSet, 'moons-earth').bodies.jwst!,
 }
 
 const cases = (Object.keys(tracks) as (keyof typeof tracks)[]).flatMap((id) => refs[id]!.map((row) => [id, row] as const))
 
 test('every body has three off-grid reference times', () => {
-  expect(cases).toHaveLength(9)
+  expect(cases).toHaveLength(18)
 })
 
 test.each(cases)('%s at JD %o is within 1%% of its orbit radius of Horizons', (id, row) => {

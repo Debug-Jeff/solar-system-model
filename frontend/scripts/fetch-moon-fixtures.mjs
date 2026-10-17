@@ -10,14 +10,36 @@ const BODIES = [
   { id: 'moon', set: 'moons-earth', command: '301', center: '500@399' },
   { id: 'phobos', set: 'moons-mars', command: '401', center: '500@499' },
   { id: 'io', set: 'moons-jupiter', command: '501', center: '500@599' },
+  { id: 'parker', set: 'spacecraft', command: '-96', center: '500@10', nearest: true },
+  { id: 'juno', set: 'moons-jupiter', command: '-61', center: '500@599', nearest: true },
+  { id: 'jwst', set: 'moons-earth', command: '-170', center: '500@399' },
 ]
+
+function closestApproachJd(track, setStartJd) {
+  const startJd = track.startJd ?? setStartJd
+  let best = 0
+  let bestR = Infinity
+  for (let k = 0; k < track.count; k++) {
+    const r = Math.hypot(track.states[k * 6], track.states[k * 6 + 1], track.states[k * 6 + 2])
+    if (r < bestR) {
+      bestR = r
+      best = k
+    }
+  }
+  return startJd + ((best + 0.37) * track.stepMinutes) / 1440
+}
 
 mkdirSync(out, { recursive: true })
 const reference = {}
 for (const body of BODIES) {
   const src = join(frontend, 'public', 'data', 'ephem', `${body.set}.json`)
   copyFileSync(src, join(out, `${body.set}.json`))
-  const startJd = JSON.parse(readFileSync(src, 'utf8')).startJd
+  const set = JSON.parse(readFileSync(src, 'utf8'))
+  const track = set.bodies[body.id]
+  const startJd = track.startJd ?? set.startJd
+  const span = ((track.count - 1) * track.stepMinutes) / 1440
+  const times = OFFSETS_DAYS.map((d) => startJd + (d / 60) * span)
+  if (body.nearest) times[1] = closestApproachJd(track, set.startJd)
   const params = new URLSearchParams({
     format: 'json',
     COMMAND: `'${body.command}'`,
@@ -29,7 +51,7 @@ for (const body of BODIES) {
     VEC_TABLE: '1',
     CSV_FORMAT: 'YES',
     TIME_TYPE: 'UT',
-    TLIST: OFFSETS_DAYS.map((d) => (startJd + d).toFixed(6)).join(' '),
+    TLIST: times.map((jd) => jd.toFixed(6)).join(' '),
   })
   const res = await fetch(`https://ssd.jpl.nasa.gov/api/horizons.api?${params}`)
   if (!res.ok) throw new Error(`${body.id}: ${res.status}`)
