@@ -75,7 +75,7 @@ import spacecraftFixture from '../ephemeris/fixtures/moons-frozen/spacecraft.jso
 
 const craftData: Body[] = [
   ...data,
-  { ...base, id: 'parker', name: 'Parker Solar Probe', type: 'spacecraft', parent: 'sun', radiusKm: 0.01, rotationPeriodHours: 0, axialTiltDeg: Number.NaN, meanTempC: Number.NaN, moonCount: Number.NaN },
+  { ...base, id: 'parker', name: 'Parker Solar Probe', type: 'spacecraft', parent: 'sun', radiusKm: 0.01, orbitalPeriodDays: Number.NaN, rotationPeriodHours: 0, axialTiltDeg: Number.NaN, meanTempC: Number.NaN, moonCount: Number.NaN },
 ]
 const craftSet = parseEphemSet(spacecraftFixture, 'spacecraft')
 const parkerTrack = craftSet.bodies.parker!
@@ -109,5 +109,42 @@ test('a planet-bound spacecraft does not widen the moon-system load trigger', ()
   const earth = bodies.moonSystems.find((m) => m.planetId === 'earth')!
   expect(earth.outerOrbitKm).toBe(384_400)
   expect(earth.memberIds).toEqual(['moon', 'jwst'])
+  bodies.dispose()
+})
+
+import marsFixture from '../ephemeris/fixtures/moons-frozen/moons-mars.json'
+
+test('a Sun-orbiting spacecraft trail shows with Orbits on and uses the native samples', () => {
+  const bodies = createBodies(new THREE.Scene(), craftData, textures, parkerInside)
+  registerSet(craftSet)
+  bodies.updateFrame(parkerInside, 0)
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  cam.position.set(0, 1e9, 1e9)
+  cam.lookAt(0, 0, 0)
+  cam.updateMatrixWorld()
+  bodies.updateView(cam, 800, null, true)
+  const parker = bodies.byId.get('parker')!
+  expect(parker.orbitLine!.visible).toBe(true)
+  expect(parker.orbitPoints.length).toBe(parkerTrack.count)
+  bodies.dispose()
+})
+
+test('a Mars orbiter trail covers one orbit, not weeks of overlapping loops', () => {
+  const marsSet = parseEphemSet(marsFixture, 'moons-mars')
+  const mroTrack = marsSet.bodies.mro!
+  const mid = mroTrack.startMs + (mroTrack.count - 1) * mroTrack.stepMs * 0.5
+  const withMro: Body[] = [
+    ...data,
+    { ...base, id: 'mars', name: 'Mars', type: 'planet', radiusKm: 3390, distanceFromSunAU: 1.52 },
+    { ...base, id: 'mro', name: 'MRO', type: 'spacecraft', parent: 'mars', radiusKm: 0.01, distanceFromParentKm: 3700, orbitalPeriodDays: 0.0782 },
+  ]
+  const bodies = createBodies(new THREE.Scene(), withMro, textures, mid)
+  registerSet(marsSet)
+  bodies.updateFrame(mid, 0)
+  const mro = bodies.byId.get('mro')!
+  expect(mro.orbitPoints.length).toBe(181)
+  const first = mro.orbitPoints[0]!
+  const last = mro.orbitPoints[180]!
+  expect(first.distanceTo(last)).toBeLessThan(200)
   bodies.dispose()
 })

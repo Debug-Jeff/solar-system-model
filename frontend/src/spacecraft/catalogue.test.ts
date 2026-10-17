@@ -9,9 +9,7 @@ test('spacecraft is an allowed set', () => {
   expect(EPHEM_SETS).toContain('spacecraft')
 })
 
-test('every catalogued craft has a track in the generated data, and vice versa', () => {
-  const tracked = new Set([...trackedIds(), 'jwst', 'mro', 'juno-probe'])
-  for (const craft of SPACECRAFT) expect(tracked.has(craft.id), craft.id).toBe(true)
+test('every craft in the generated data is catalogued (the Go test checks the registry)', () => {
   for (const id of trackedIds()) expect(SPACECRAFT.some((c) => c.id === id), id).toBe(true)
 })
 

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { beforeEach, expect, test } from 'vitest'
-import { createCameraFlight, easeInOutCubic, FLIGHT_MS, flyToDistance } from './flyTo'
+import { createCameraFlight, easeInOutCubic, FLIGHT_MS, flyToDistance, followMinDistance } from './flyTo'
 
 let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
@@ -51,4 +51,10 @@ test('retargeting mid-flight continues from the current pose', () => {
   flight.start(20, 600)
   flight.update(b, 600)
   expect(camera.position.distanceTo(before)).toBeLessThan(1e-6)
+})
+
+test('followMinDistance lets the camera reach small craft but never inside a planet', () => {
+  expect(followMinDistance(0.01)).toBeCloseTo(0.015, 12)
+  expect(followMinDistance(0.0001)).toBe(0.002)
+  expect(followMinDistance(6371)).toBe(1)
 })

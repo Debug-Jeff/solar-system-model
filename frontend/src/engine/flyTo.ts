@@ -10,6 +10,10 @@ export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
+export function followMinDistance(radiusKm: number): number {
+  return Math.min(1, Math.max(0.002, radiusKm * 1.5))
+}
+
 export function flyToDistance(radiusKm: number): number {
   return Math.max(radiusKm * FLY_TO_RADII, MIN_FLY_TO_KM)
 }

@@ -140,7 +140,7 @@ const BUS_GEOMETRY = new THREE.BoxGeometry(1, 0.7, 0.7)
 const PANEL_GEOMETRY = new THREE.PlaneGeometry(1.6, 0.6)
 
 function buildSpacecraftMesh(): THREE.Mesh {
-  const bus = new THREE.Mesh(BUS_GEOMETRY, new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.35 }))
+  const bus = new THREE.Mesh(BUS_GEOMETRY, new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.3, roughness: 0.45 }))
   const panelMaterial = new THREE.MeshStandardMaterial({ color: 0x1d3c78, metalness: 0.4, roughness: 0.5, side: THREE.DoubleSide })
   for (const side of [-1, 1]) {
     const panel = new THREE.Mesh(PANEL_GEOMETRY, panelMaterial)
@@ -402,11 +402,19 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     if (parent) makeEntry(body, parent, i + 1)
   })
 
+  function periodFitsCoverage(entry: BodyEntry): boolean {
+    const coverage = trackCoverage(entry.id)
+    const periodMs = entry.data.orbitalPeriodDays * 86_400_000
+    return coverage !== null && Number.isFinite(periodMs) && periodMs > 0 && periodMs < coverage.endMs - coverage.startMs
+  }
+
   function rebuildTrackOrbit(entry: BodyEntry, simTimeMs: number): void {
     const coverage = entry.type === 'spacecraft' ? trackCoverage(entry.id) : null
-    const center = coverage ? (coverage.startMs + coverage.endMs) / 2 : simTimeMs
-    const spanDays = coverage ? (coverage.endMs - coverage.startMs) / 86_400_000 : entry.data.orbitalPeriodDays
-    entry.orbitPoints = moonOrbitPath(entry.id, center, spanDays, coverage ? 360 : 180).map((v) =>
+    const fullCoverage = coverage !== null && !periodFitsCoverage(entry)
+    const center = fullCoverage ? (coverage.startMs + coverage.endMs) / 2 : simTimeMs
+    const spanDays = fullCoverage ? (coverage.endMs - coverage.startMs) / 86_400_000 : entry.data.orbitalPeriodDays
+    const samples = fullCoverage ? coverage.count - 1 : coverage ? Math.max(180, Math.round((spanDays * 86_400_000) / coverage.stepMs)) : 180
+    entry.orbitPoints = moonOrbitPath(entry.id, center, spanDays, samples).map((v) =>
       eclipticKmVecToScene(v, new THREE.Vector3())
     )
     entry.orbitBuiltAtMs = simTimeMs
@@ -437,7 +445,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       entry.orbitBuiltAtMs = Number.NaN
     }
     eclipticKmVecToScene(p, entry.pivot.position)
-    const rebuildAfterMs = entry.type === 'spacecraft' ? Number.POSITIVE_INFINITY : (entry.data.orbitalPeriodDays * 86_400_000) / 4
+    const rebuildAfterMs = entry.type === 'spacecraft' && !periodFitsCoverage(entry) ? Number.POSITIVE_INFINITY : (entry.data.orbitalPeriodDays * 86_400_000) / 4
     if (!(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < rebuildAfterMs)) rebuildTrackOrbit(entry, simTimeMs)
     return true
   }
@@ -480,7 +488,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       const selected = entry.id === selectedId
       entry.orbitMaterial.opacity = selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity
       let visible = (orbitsOn || selected) && (entry.type !== 'spacecraft' || entry.trackActive)
-      if (visible && entry.parentId) {
+      if (visible && entry.parentId && entry.parentId !== 'sun') {
         const parent = byId.get(entry.parentId)
         if (parent) {
           parent.pivot.getWorldPosition(_parentPos)
@@ -489,7 +497,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
         }
       }
       entry.orbitLine.visible = visible
-      if (!visible || !entry.ephemerisId) continue
+      const heliocentricTrack = entry.type === 'spacecraft' && entry.parentId === 'sun'
+      if (!visible || !(entry.ephemerisId || heliocentricTrack)) continue
       entry.pivot.getWorldPosition(_worldPos)
       const near = camera.position.distanceTo(_worldPos) < ORBIT_LOCAL_FRACTION * _worldPos.length()
       if (near) writeOrbitBuffer(entry, _worldPos, insertOnPath(entry.orbitPoints, _worldPos))

@@ -4,7 +4,7 @@ import { loadEphemSet } from '../ephemeris/loader'
 import { registerSet } from '../ephemeris/moonStore'
 import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
-import { flyToDistance } from './flyTo'
+import { flyToDistance, followMinDistance } from './flyTo'
 import { createFollowController } from './follow'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
@@ -58,12 +58,14 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     const entry = bodies.byId.get(id)
     if (!entry) return
     controls.zoomToCursor = false
+    controls.minDistance = followMinDistance(entry.radiusKm)
     follow.start(flyToDistance(entry.radiusKm), performance.now())
   }
 
   function stopFollowing(): void {
     follow.stop()
     controls.zoomToCursor = true
+    controls.minDistance = 1
   }
 
   const requestedSets = new Set<string>()

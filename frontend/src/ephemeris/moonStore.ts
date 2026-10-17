@@ -48,9 +48,9 @@ export function moonPosition(id: string, utcMs: number): Vec3 | null {
   return track ? sampledPosition(track, utcMs) : null
 }
 
-export function trackCoverage(id: string): { startMs: number; endMs: number } | null {
+export function trackCoverage(id: string): { startMs: number; endMs: number; count: number; stepMs: number } | null {
   const track = tracks.get(id)
-  return track ? { startMs: track.startMs, endMs: track.startMs + (track.count - 1) * track.stepMs } : null
+  return track ? { startMs: track.startMs, endMs: track.startMs + (track.count - 1) * track.stepMs, count: track.count, stepMs: track.stepMs } : null
 }
 
 export function moonAvailability(id: string, utcMs: number): Availability {

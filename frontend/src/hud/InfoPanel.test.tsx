@@ -71,4 +71,5 @@ test('a spacecraft shows its mission, launch date and live distances', () => {
   expect(screen.queryByText('Radius')).toBeNull()
   expect(screen.queryByText('Moons')).toBeNull()
   expect(screen.getByText('From the Sun').parentElement).toHaveTextContent('—')
+  expect(screen.getByText('Status').parentElement).toHaveTextContent('No trajectory data for this date')
 })
