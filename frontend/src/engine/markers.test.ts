@@ -17,7 +17,7 @@ test('non-overlapping markers are all kept', () => {
 })
 
 test('priorities follow the plan', () => {
-  expect(MARKER_PRIORITY).toEqual({ star: 5, planet: 4, dwarfPlanet: 3, comet: 2, asteroid: 2, moon: 1 })
+  expect(MARKER_PRIORITY).toEqual({ star: 5, planet: 4, dwarfPlanet: 3, comet: 2, asteroid: 2, spacecraft: 2, moon: 1 })
 })
 
 test('moons appear once their orbit spans 24 px', () => {

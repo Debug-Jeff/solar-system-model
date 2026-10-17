@@ -1,7 +1,8 @@
 import type { EngineHandle } from './engine/engine'
 import type { AppStore } from './state/store'
 import type { SmallBodiesData } from './ephemeris/smallBodies'
-import { mergeSmallBodies } from './smallBodyRecords'
+import { appendUnique, mergeSmallBodies } from './smallBodyRecords'
+import { spacecraftRecords } from './spacecraft/catalogue'
 import type { Body } from './types/body'
 
 export const DEV_LOAD_ERROR = 'Failed to load — is the backend running on :8080?'
@@ -18,7 +19,8 @@ export interface StartDeps {
 export async function startApp({ store, fetchPlanets, fetchSmallBodies, createEngine, isDev }: StartDeps): Promise<void> {
   try {
     const [planets, small] = await Promise.all([fetchPlanets(), fetchSmallBodies ? fetchSmallBodies().catch(() => null) : null])
-    store.getState().setBodies(small ? mergeSmallBodies(planets, small) : planets)
+    const withSmall = small ? mergeSmallBodies(planets, small) : planets
+    store.getState().setBodies(appendUnique(withSmall, spacecraftRecords()))
     createEngine(store, small)
   } catch (err) {
     console.error('Failed to start solar system:', err)
