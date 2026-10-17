@@ -73,3 +73,9 @@ test.each([
 ])('parseEphemSet rejects %s', (_name, raw) => {
   expect(() => parseEphemSet(raw, 'moons-test')).toThrow()
 })
+
+test('a per-body startJd overrides the set start', () => {
+  const set = parseEphemSet(rawSet({}, { startJd: START_JD + 2 }), 'moons-test')
+  expect(set.bodies.probe!.startMs).toBe(startMs + 2 * 86_400_000)
+  expect(() => parseEphemSet(rawSet({}, { startJd: 'soon' }), 'moons-test')).toThrow()
+})

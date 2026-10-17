@@ -23,7 +23,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseTrack(id: string, raw: unknown, startMs: number): SampledTrack {
   if (!isRecord(raw)) throw new Error(`ephemeris body ${id} is not an object`)
-  const { center, stepMinutes, count, states } = raw
+  const { center, stepMinutes, count, states, startJd } = raw
+  if (startJd !== undefined && (typeof startJd !== 'number' || !Number.isFinite(startJd))) throw new Error(`ephemeris body ${id} has a bad startJd`)
   if (typeof center !== 'string' || center === '') throw new Error(`ephemeris body ${id} has no center`)
   if (typeof stepMinutes !== 'number' || !Number.isInteger(stepMinutes) || stepMinutes <= 0) {
     throw new Error(`ephemeris body ${id} has a bad step`)
@@ -38,7 +39,8 @@ function parseTrack(id: string, raw: unknown, startMs: number): SampledTrack {
     if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`ephemeris body ${id} has a non-finite state`)
     values[i] = v
   }
-  return { center, startMs, stepMs: stepMinutes * 60_000, count, states: values }
+  const bodyStartMs = typeof startJd === 'number' ? (startJd - UNIX_EPOCH_JD) * MS_PER_DAY : startMs
+  return { center, startMs: bodyStartMs, stepMs: stepMinutes * 60_000, count, states: values }
 }
 
 export function parseEphemSet(raw: unknown, expectedSet: string): EphemSet {
