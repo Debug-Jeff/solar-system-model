@@ -161,3 +161,31 @@ func TestVectorsQueueRespectsContext(t *testing.T) {
 		t.Fatalf("queued call ignored its context for %v", time.Since(began))
 	}
 }
+
+func TestCoverageErrorParsing(t *testing.T) {
+	cases := map[string]struct {
+		text          string
+		after, before string
+	}{
+		"after":    {`No ephemeris for target "Mars Reconnaissance Orbiter (spacecraft)" after A.D. 2026-OCT-27 00:01:09.1826 TDB`, "2026-10-27T00:01:09Z", ""},
+		"prior to": {`No ephemeris for target "Hera (spacecraft)" prior to A.D. 2024-OCT-07 15:00:00.0000 TDB`, "", "2024-10-07T15:00:00Z"},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			h := fakeHorizons(t, func(w http.ResponseWriter, r *http.Request) {
+				_ = json.NewEncoder(w).Encode(map[string]any{"error": c.text, "result": ""})
+			})
+			_, err := h.Vectors(context.Background(), "-74", "500@499", start, start.Add(time.Hour), time.Hour)
+			var cov *CoverageError
+			if !errors.As(err, &cov) {
+				t.Fatalf("expected CoverageError, got %v", err)
+			}
+			if c.after != "" && cov.After.UTC().Format(time.RFC3339) != c.after {
+				t.Errorf("after = %v", cov.After)
+			}
+			if c.before != "" && cov.Before.UTC().Format(time.RFC3339) != c.before {
+				t.Errorf("before = %v", cov.Before)
+			}
+		})
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -87,6 +88,9 @@ func (h *Horizons) Vectors(ctx context.Context, command, center string, start, s
 		return nil, fmt.Errorf("horizons %s: response is not JSON", command)
 	}
 	if payload.Error != "" {
+		if cov := parseCoverage(payload.Error); cov != nil {
+			return nil, cov
+		}
 		return nil, fmt.Errorf("horizons %s: %s", command, payload.Error)
 	}
 	states, err := parseVectors(payload.Result)
@@ -167,4 +171,33 @@ func parseVectors(result string) ([]State, error) {
 		return nil, errors.New("empty vector table")
 	}
 	return states, nil
+}
+
+type CoverageError struct {
+	After  time.Time
+	Before time.Time
+}
+
+func (e *CoverageError) Error() string {
+	if !e.After.IsZero() {
+		return "no ephemeris after " + e.After.UTC().Format(time.RFC3339)
+	}
+	return "no ephemeris before " + e.Before.UTC().Format(time.RFC3339)
+}
+
+var coverageRe = regexp.MustCompile(`No ephemeris for target .* (after|prior to) A\.D\. (\d{4}-[A-Za-z]{3}-\d{2} \d{2}:\d{2}:\d{2})`)
+
+func parseCoverage(text string) *CoverageError {
+	m := coverageRe.FindStringSubmatch(text)
+	if m == nil {
+		return nil
+	}
+	t, err := time.Parse("2006-Jan-02 15:04:05", m[2])
+	if err != nil {
+		return nil
+	}
+	if m[1] == "after" {
+		return &CoverageError{After: t}
+	}
+	return &CoverageError{Before: t}
 }

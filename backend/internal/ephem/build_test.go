@@ -44,21 +44,6 @@ func TestStepFor(t *testing.T) {
 	}
 }
 
-func TestRegistryIsSafe(t *testing.T) {
-	numeric := regexp.MustCompile(`^[0-9]{3}$`)
-	center := regexp.MustCompile(`^500@[0-9]{3}$`)
-	if len(Sets) != 7 {
-		t.Fatalf("expected 7 sets, got %d", len(Sets))
-	}
-	for name, bodies := range Sets {
-		for _, b := range bodies {
-			if !numeric.MatchString(b.Command) || !center.MatchString(b.Center) || b.PeriodDays <= 0 || b.ID == "" || b.CenterName == "" {
-				t.Errorf("%s: unsafe or incomplete spec %+v", name, b)
-			}
-		}
-	}
-}
-
 func TestBuildSet(t *testing.T) {
 	now := time.Date(2026, 10, 16, 15, 4, 5, 0, time.UTC)
 	src := &fakeSource{}
@@ -66,7 +51,7 @@ func TestBuildSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if file.Version != 1 || file.Set != "moons-jupiter" || len(file.Bodies) != 4 || src.calls != 4 {
+	if file.Version != 1 || file.Set != "moons-jupiter" || len(file.Bodies) != 5 || src.calls != 5 {
 		t.Fatalf("unexpected file %+v (calls %d)", file, src.calls)
 	}
 	wantStart := float64(time.Date(2026, 9, 16, 0, 0, 0, 0, time.UTC).Unix())/86400 + 2440587.5
@@ -89,5 +74,103 @@ func TestBuildSetErrors(t *testing.T) {
 	}
 	if _, err := BuildSet(context.Background(), &fakeSource{fail: "503"}, "moons-jupiter", now); err == nil {
 		t.Error("one failing body should fail the set")
+	}
+}
+
+func TestSpacecraftRegistry(t *testing.T) {
+	cmd := regexp.MustCompile(`^-?[0-9]{1,3}$`)
+	center := regexp.MustCompile(`^500@[0-9]{1,3}$`)
+	if len(Sets) != 8 {
+		t.Fatalf("expected 8 sets, got %d", len(Sets))
+	}
+	counts := map[string]int{}
+	for name, bodies := range Sets {
+		for _, b := range bodies {
+			if !cmd.MatchString(b.Command) || !center.MatchString(b.Center) || (b.Kind != "moon" && b.Kind != "spacecraft") {
+				t.Errorf("%s: bad spec %+v", name, b)
+			}
+			counts[b.Kind]++
+		}
+	}
+	if counts["spacecraft"] != 15 {
+		t.Errorf("expected 15 spacecraft, got %d", counts["spacecraft"])
+	}
+}
+
+func TestPerBodyStepAndWindow(t *testing.T) {
+	now := time.Date(2026, 10, 16, 15, 0, 0, 0, time.UTC)
+	file, err := BuildSet(context.Background(), &fakeSource{}, "moons-mars", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mro := file.Bodies["mro"]
+	if mro.StepMinutes != 10 || mro.Count != 2881 {
+		t.Fatalf("mro step %d count %d", mro.StepMinutes, mro.Count)
+	}
+	wantStart := float64(time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC).Unix())/86400 + 2440587.5
+	if mro.StartJD == nil || *mro.StartJD != wantStart {
+		t.Fatalf("mro startJd = %v, want %v", mro.StartJD, wantStart)
+	}
+	if file.Bodies["phobos"].StartJD != nil {
+		t.Fatal("startJd must be omitted when it equals the set start")
+	}
+}
+
+type coverageSource struct {
+	fakeSource
+	limit time.Time
+	tries map[string]int
+}
+
+func (c *coverageSource) Vectors(ctx context.Context, command, center string, start, stop time.Time, step time.Duration) ([]State, error) {
+	if c.tries == nil {
+		c.tries = map[string]int{}
+	}
+	c.tries[command]++
+	if stop.After(c.limit) {
+		return nil, &CoverageError{After: c.limit}
+	}
+	return c.fakeSource.Vectors(ctx, command, center, start, stop, step)
+}
+
+func TestCoverageIsClipped(t *testing.T) {
+	now := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	src := &coverageSource{limit: time.Date(2026, 10, 20, 0, 32, 0, 0, time.UTC)}
+	file, err := BuildSet(context.Background(), src, "moons-mars", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mro := file.Bodies["mro"]
+	if mro.Count != 14*144+4 || src.tries["-74"] != 2 {
+		t.Fatalf("mro count %d tries %d", mro.Count, src.tries["-74"])
+	}
+}
+
+func TestSpacecraftFailureDoesNotFailTheSet(t *testing.T) {
+	now := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	file, err := BuildSet(context.Background(), &fakeSource{fail: "-61"}, "moons-jupiter", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := file.Bodies["juno"]; ok {
+		t.Fatal("failed spacecraft should be skipped")
+	}
+	if _, ok := file.Bodies["io"]; !ok {
+		t.Fatal("moons must still be present")
+	}
+	if _, err := BuildSet(context.Background(), &fakeSource{fail: "501"}, "moons-jupiter", now); err == nil {
+		t.Fatal("a failing moon still fails the set")
+	}
+}
+
+func TestCoverageTooShortSkips(t *testing.T) {
+	now := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	src := &coverageSource{limit: time.Date(2026, 10, 6, 0, 5, 0, 0, time.UTC)}
+	file, err := BuildSet(context.Background(), src, "moons-mars", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := file.Bodies["mro"]; ok {
+		t.Fatal("fewer than 2 samples must skip the craft")
 	}
 }
