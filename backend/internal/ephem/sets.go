@@ -1,30 +1,40 @@
 package ephem
 
 type BodySpec struct {
-	ID         string
-	Command    string
-	Center     string
-	CenterName string
-	PeriodDays float64
+	ID          string
+	Command     string
+	Center      string
+	CenterName  string
+	PeriodDays  float64
+	Kind        string
+	StepMinutes int
+	WindowDays  int
 }
 
 func moon(id, command, center, centerName string, periodDays float64) BodySpec {
-	return BodySpec{ID: id, Command: command, Center: center, CenterName: centerName, PeriodDays: periodDays}
+	return BodySpec{ID: id, Command: command, Center: center, CenterName: centerName, PeriodDays: periodDays, Kind: "moon"}
+}
+
+func craft(id, command, center, centerName string, stepMinutes, windowDays int) BodySpec {
+	return BodySpec{ID: id, Command: command, Center: center, CenterName: centerName, Kind: "spacecraft", StepMinutes: stepMinutes, WindowDays: windowDays}
 }
 
 var Sets = map[string][]BodySpec{
 	"moons-earth": {
 		moon("moon", "301", "500@399", "earth", 27.321661),
+		craft("jwst", "-170", "500@399", "earth", 1440, 30),
 	},
 	"moons-mars": {
 		moon("phobos", "401", "500@499", "mars", 0.31891),
 		moon("deimos", "402", "500@499", "mars", 1.26244),
+		craft("mro", "-74", "500@499", "mars", 10, 10),
 	},
 	"moons-jupiter": {
 		moon("io", "501", "500@599", "jupiter", 1.769138),
 		moon("europa", "502", "500@599", "jupiter", 3.551181),
 		moon("ganymede", "503", "500@599", "jupiter", 7.154553),
 		moon("callisto", "504", "500@599", "jupiter", 16.689017),
+		craft("juno", "-61", "500@599", "jupiter", 10, 10),
 	},
 	"moons-saturn": {
 		moon("mimas", "601", "500@699", "saturn", 0.942422),
@@ -47,5 +57,19 @@ var Sets = map[string][]BodySpec{
 	},
 	"moons-pluto": {
 		moon("charon", "901", "500@999", "pluto", 6.387221),
+	},
+	"spacecraft": {
+		craft("parker", "-96", "500@10", "sun", 60, 30),
+		craft("europa-clipper", "-159", "500@10", "sun", 1440, 30),
+		craft("lucy", "-49", "500@10", "sun", 1440, 30),
+		craft("psyche-probe", "-255", "500@10", "sun", 1440, 30),
+		craft("voyager-1", "-31", "500@10", "sun", 1440, 30),
+		craft("voyager-2", "-32", "500@10", "sun", 1440, 30),
+		craft("new-horizons", "-98", "500@10", "sun", 1440, 30),
+		craft("osiris-apex", "-64", "500@10", "sun", 1440, 30),
+		craft("solar-orbiter", "-144", "500@10", "sun", 1440, 30),
+		craft("bepicolombo", "-121", "500@10", "sun", 1440, 30),
+		craft("juice", "-28", "500@10", "sun", 1440, 30),
+		craft("hera", "-91", "500@10", "sun", 1440, 30),
 	},
 }

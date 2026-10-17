@@ -74,15 +74,15 @@ func TestEphemServesAndCaches(t *testing.T) {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body)
 	}
 	var file ephem.SetFile
-	if err := json.Unmarshal(rec.Body.Bytes(), &file); err != nil || file.Set != "moons-mars" || len(file.Bodies) != 2 {
+	if err := json.Unmarshal(rec.Body.Bytes(), &file); err != nil || file.Set != "moons-mars" || len(file.Bodies) != len(ephem.Sets["moons-mars"]) {
 		t.Fatalf("bad body %v %+v", err, file)
 	}
 	if got := rec.Header().Get("Cache-Control"); got != "public, max-age=21600" {
 		t.Errorf("Cache-Control = %q", got)
 	}
 	get(mux, "/api/ephem/moons-mars")
-	if v.calls.Load() != 2 {
-		t.Fatalf("expected one build (2 bodies), got %d calls", v.calls.Load())
+	if want := int64(len(ephem.Sets["moons-mars"])); v.calls.Load() != want {
+		t.Fatalf("expected one build (%d calls), got %d calls", want, v.calls.Load())
 	}
 }
 
@@ -102,8 +102,8 @@ func TestEphemSingleflight(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if v.calls.Load() != 1 {
-		t.Fatalf("expected exactly 1 build, got %d", v.calls.Load())
+	if want := int64(len(ephem.Sets["moons-earth"])); v.calls.Load() != want {
+		t.Fatalf("expected exactly 1 build (%d calls), got %d calls", want, v.calls.Load())
 	}
 }
 
