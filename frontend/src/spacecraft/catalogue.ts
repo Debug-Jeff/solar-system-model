@@ -5,6 +5,7 @@ export interface SpacecraftInfo {
   name: string
   parent: 'sun' | 'earth' | 'mars' | 'jupiter'
   distanceFromParentKm: number
+  periodDays?: number
   launched: string
   mission: string
   facts: string[]
@@ -133,6 +134,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
     name: 'Mars Reconnaissance Orbiter',
     parent: 'mars',
     distanceFromParentKm: 3700,
+    periodDays: 0.0782,
     launched: '2005-08-12',
     mission: 'Map Mars in high resolution and relay rover data',
     facts: ['In orbit around Mars since 2006.', 'Its HiRISE camera can resolve objects about 1 m across on the surface.'],
@@ -142,6 +144,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
     name: 'Juno',
     parent: 'jupiter',
     distanceFromParentKm: 4_500_000,
+    periodDays: 33,
     launched: '2011-08-05',
     mission: 'Study Jupiter’s interior, magnetic field and poles',
     facts: ['In a highly elliptical polar orbit around Jupiter since July 2016.', 'Its extended mission has included close flybys of Ganymede, Europa and Io.'],
@@ -156,7 +159,7 @@ export function spacecraftRecords(): Body[] {
     parent: c.parent,
     radiusKm: 0.01,
     distanceFromParentKm: c.distanceFromParentKm,
-    orbitalPeriodDays: Number.NaN,
+    orbitalPeriodDays: c.periodDays ?? Number.NaN,
     rotationPeriodHours: 0,
     axialTiltDeg: Number.NaN,
     meanTempC: Number.NaN,

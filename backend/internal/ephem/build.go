@@ -59,8 +59,9 @@ func BuildSet(ctx context.Context, src VectorSource, set string, now time.Time) 
 	}
 	for _, body := range bodies {
 		track, err := buildTrack(ctx, src, body, day)
+		var cov *CoverageError
 		if err != nil {
-			if body.Kind == "spacecraft" {
+			if body.Kind == "spacecraft" && errors.As(err, &cov) {
 				log.Printf("%s/%s: skipped: %v", set, body.ID, err)
 				continue
 			}

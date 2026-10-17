@@ -3,6 +3,7 @@ package ephem
 import (
 	"context"
 	"errors"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -146,20 +147,55 @@ func TestCoverageIsClipped(t *testing.T) {
 	}
 }
 
-func TestSpacecraftFailureDoesNotFailTheSet(t *testing.T) {
+func TestTransientSpacecraftFailureFailsTheSet(t *testing.T) {
 	now := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
-	file, err := BuildSet(context.Background(), &fakeSource{fail: "-61"}, "moons-jupiter", now)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := file.Bodies["juno"]; ok {
-		t.Fatal("failed spacecraft should be skipped")
-	}
-	if _, ok := file.Bodies["io"]; !ok {
-		t.Fatal("moons must still be present")
+	if _, err := BuildSet(context.Background(), &fakeSource{fail: "-61"}, "moons-jupiter", now); err == nil {
+		t.Fatal("a non-coverage spacecraft error must fail the set so cached or static data is kept")
 	}
 	if _, err := BuildSet(context.Background(), &fakeSource{fail: "501"}, "moons-jupiter", now); err == nil {
 		t.Fatal("a failing moon still fails the set")
+	}
+}
+
+func TestRegistryIDsAreUniqueAndComplete(t *testing.T) {
+	seen := map[string]string{}
+	for name, bodies := range Sets {
+		for _, b := range bodies {
+			if prev, dup := seen[b.ID]; dup {
+				t.Errorf("id %s in both %s and %s", b.ID, prev, name)
+			}
+			seen[b.ID] = name
+			if b.ID == "" || b.CenterName == "" || (b.StepMinutes <= 0 && b.PeriodDays <= 0) {
+				t.Errorf("%s: incomplete spec %+v", name, b)
+			}
+		}
+	}
+}
+
+func TestFrontendCatalogueMatchesRegistry(t *testing.T) {
+	src, err := os.ReadFile("../../../frontend/src/spacecraft/catalogue.ts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalogue := map[string]bool{}
+	for _, m := range regexp.MustCompile(`(?m)^\s+id: '([a-z0-9-]+)',$`).FindAllStringSubmatch(string(src), -1) {
+		catalogue[m[1]] = true
+	}
+	registry := map[string]bool{}
+	for _, bodies := range Sets {
+		for _, b := range bodies {
+			if b.Kind == "spacecraft" {
+				registry[b.ID] = true
+			}
+		}
+	}
+	if len(catalogue) != len(registry) {
+		t.Fatalf("catalogue has %d craft, registry %d", len(catalogue), len(registry))
+	}
+	for id := range registry {
+		if !catalogue[id] {
+			t.Errorf("registry craft %s missing from the frontend catalogue", id)
+		}
 	}
 }
 

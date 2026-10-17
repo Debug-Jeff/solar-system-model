@@ -31,6 +31,7 @@ export function InfoPanel({ store }: StoreProps) {
           ['Launched', body.mission ? formatSimDate(Date.parse(`${body.mission.launched}T00:00:00Z`)) : '—'],
           ['From the Sun', ranges?.split('|')[0] ?? '—'],
           ['From Earth', ranges?.split('|')[1] ?? '—'],
+          ['Status', ranges && !ranges.startsWith('—') ? 'Tracking' : 'No trajectory data for this date'],
           ['Position', position ?? '—'],
         ]
       : []
