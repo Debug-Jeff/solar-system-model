@@ -31,7 +31,7 @@ jobs:
         working-directory: backend
         env:
           NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
-        run: go run ./cmd/snapshot -out "$RUNNER_TEMP/data/ephem" -elements "$RUNNER_TEMP/data/smallBodyElements.json" -smallbodies "$RUNNER_TEMP/data/smallbodies.json"
+        run: go run ./cmd/snapshot -out "$RUNNER_TEMP/data/ephem" -elements "$RUNNER_TEMP/data/smallBodyElements.json" -smallbodies "$RUNNER_TEMP/data/smallbodies.json" -satellites "$RUNNER_TEMP/data/satellites.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ephemeris-snapshot
@@ -59,6 +59,9 @@ jobs:
           cp "$RUNNER_TEMP"/data/ephem/*.json frontend/public/data/ephem/
           cp "$RUNNER_TEMP/data/smallBodyElements.json" frontend/src/ephemeris/data/smallBodyElements.json
           cp "$RUNNER_TEMP/data/smallbodies.json" frontend/public/data/smallbodies.json
+          if [ -f "$RUNNER_TEMP/data/satellites.json" ]; then
+            cp "$RUNNER_TEMP/data/satellites.json" frontend/public/data/satellites.json
+          fi
           if [ -z "$(git status --porcelain -- frontend/public/data frontend/src/ephemeris/data)" ]; then
             echo "No data changes."
             exit 0
