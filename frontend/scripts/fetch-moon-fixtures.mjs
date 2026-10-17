@@ -11,7 +11,7 @@ const BODIES = [
   { id: 'phobos', set: 'moons-mars', command: '401', center: '500@499' },
   { id: 'io', set: 'moons-jupiter', command: '501', center: '500@599' },
   { id: 'parker', set: 'spacecraft', command: '-96', center: '500@10', nearest: true },
-  { id: 'juno', set: 'moons-jupiter', command: '-61', center: '500@599', nearest: true },
+  { id: 'juno-probe', set: 'moons-jupiter', command: '-61', center: '500@599', nearest: true },
   { id: 'jwst', set: 'moons-earth', command: '-170', center: '500@399' },
 ]
 

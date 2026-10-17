@@ -20,7 +20,7 @@ const tracks = {
   phobos: parseEphemSet(marsSet, 'moons-mars').bodies.phobos!,
   io: parseEphemSet(jupiterSet, 'moons-jupiter').bodies.io!,
   parker: parseEphemSet(spacecraftSet, 'spacecraft').bodies.parker!,
-  juno: parseEphemSet(jupiterSet, 'moons-jupiter').bodies.juno!,
+  'juno-probe': parseEphemSet(jupiterSet, 'moons-jupiter').bodies['juno-probe']!,
   jwst: parseEphemSet(earthSet, 'moons-earth').bodies.jwst!,
 }
 

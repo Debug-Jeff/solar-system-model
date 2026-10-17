@@ -138,7 +138,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
     facts: ['In orbit around Mars since 2006.', 'Its HiRISE camera can resolve objects about 1 m across on the surface.'],
   },
   {
-    id: 'juno',
+    id: 'juno-probe',
     name: 'Juno',
     parent: 'jupiter',
     distanceFromParentKm: 4_500_000,

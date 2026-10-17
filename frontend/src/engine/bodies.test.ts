@@ -70,3 +70,44 @@ test('moon systems list each planet with moons and its set', () => {
   expect(bodies.moonSystems).toEqual([{ planetId: 'earth', set: 'moons-earth', memberIds: ['moon'], outerOrbitKm: 384_400 }])
   bodies.dispose()
 })
+
+import spacecraftFixture from '../ephemeris/fixtures/moons-frozen/spacecraft.json'
+
+const craftData: Body[] = [
+  ...data,
+  { ...base, id: 'parker', name: 'Parker Solar Probe', type: 'spacecraft', parent: 'sun', radiusKm: 0.01, rotationPeriodHours: 0, axialTiltDeg: Number.NaN, meanTempC: Number.NaN, moonCount: Number.NaN },
+]
+const craftSet = parseEphemSet(spacecraftFixture, 'spacecraft')
+const parkerTrack = craftSet.bodies.parker!
+const parkerInside = parkerTrack.startMs + 100.5 * parkerTrack.stepMs
+
+test('a spacecraft without track data is hidden (mesh, trail and marker)', () => {
+  const bodies = createBodies(new THREE.Scene(), craftData, textures, parkerInside)
+  bodies.updateFrame(parkerInside, 0)
+  const parker = bodies.byId.get('parker')!
+  expect(parker.pivot.visible).toBe(false)
+  expect(bodies.markerEntries.find((m) => m.id === 'parker')!.hidden).toBe(true)
+  bodies.dispose()
+})
+
+test('a spacecraft on its track is visible at its heliocentric position with a trail', () => {
+  const bodies = createBodies(new THREE.Scene(), craftData, textures, parkerInside)
+  registerSet(craftSet)
+  bodies.updateFrame(parkerInside, 0)
+  const parker = bodies.byId.get('parker')!
+  expect(parker.pivot.visible).toBe(true)
+  expect(bodies.markerEntries.find((m) => m.id === 'parker')!.hidden).toBe(false)
+  const expected = eclipticKmVecToScene(moonPosition('parker', parkerInside)!, new THREE.Vector3())
+  expect(bodies.getBodyWorldPos('parker', new THREE.Vector3()).distanceTo(expected)).toBeLessThan(1e-2)
+  expect(parker.orbitPoints.length).toBeGreaterThan(100)
+  bodies.dispose()
+})
+
+test('a planet-bound spacecraft does not widen the moon-system load trigger', () => {
+  const withJwst: Body[] = [...data, { ...base, id: 'jwst', name: 'JWST', type: 'spacecraft', parent: 'earth', radiusKm: 0.01, distanceFromParentKm: 1_500_000 }]
+  const bodies = createBodies(new THREE.Scene(), withJwst, textures, inside)
+  const earth = bodies.moonSystems.find((m) => m.planetId === 'earth')!
+  expect(earth.outerOrbitKm).toBe(384_400)
+  expect(earth.memberIds).toEqual(['moon', 'jwst'])
+  bodies.dispose()
+})

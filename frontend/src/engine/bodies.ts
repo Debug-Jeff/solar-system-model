@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
-import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered } from '../ephemeris/moonStore'
+import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered, trackCoverage } from '../ephemeris/moonStore'
 import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
 import { ORBIT_OPACITY, orbitColor, relativePositions } from './orbitStyle'
@@ -134,6 +134,21 @@ function buildRing(id: RingedId, textures: Textures): THREE.Mesh {
   const mesh = new THREE.Mesh(geometry, material)
   mesh.rotation.x = -Math.PI / 2
   return mesh
+}
+
+const BUS_GEOMETRY = new THREE.BoxGeometry(1, 0.7, 0.7)
+const PANEL_GEOMETRY = new THREE.PlaneGeometry(1.6, 0.6)
+
+function buildSpacecraftMesh(): THREE.Mesh {
+  const bus = new THREE.Mesh(BUS_GEOMETRY, new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.35 }))
+  const panelMaterial = new THREE.MeshStandardMaterial({ color: 0x1d3c78, metalness: 0.4, roughness: 0.5, side: THREE.DoubleSide })
+  for (const side of [-1, 1]) {
+    const panel = new THREE.Mesh(PANEL_GEOMETRY, panelMaterial)
+    panel.position.x = side * 1.35
+    panel.rotation.x = -Math.PI / 2
+    bus.add(panel)
+  }
+  return bus
 }
 
 function buildMaterial(body: Body, textures: Textures): THREE.Material {
@@ -278,7 +293,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     pivot.add(tiltGroup)
 
     const radiusKm = body.type === 'star' ? SUN_RADIUS_KM : body.radiusKm
-    const mesh = new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
+    const mesh = body.type === 'spacecraft' ? buildSpacecraftMesh() : new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
     mesh.scale.setScalar(radiusKm)
     mesh.userData.bodyId = body.id
     tiltGroup.add(mesh)
@@ -378,7 +393,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   const sun = planetsData.find((b) => b.type === 'star')
   if (!sun) throw new Error('planet data has no star')
   const primaries = planetsData.filter((b) => b.type === 'planet' || b.type === 'dwarfPlanet' || b.type === 'comet' || b.type === 'asteroid')
-  const moons = planetsData.filter((b) => b.type === 'moon')
+  const moons = planetsData.filter((b) => b.type === 'moon' || b.type === 'spacecraft')
 
   makeEntry(sun, null, 0)
   primaries.forEach((body, i) => makeEntry(body, null, i + 1))
@@ -388,7 +403,10 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   })
 
   function rebuildTrackOrbit(entry: BodyEntry, simTimeMs: number): void {
-    entry.orbitPoints = moonOrbitPath(entry.id, simTimeMs, entry.data.orbitalPeriodDays).map((v) =>
+    const coverage = entry.type === 'spacecraft' ? trackCoverage(entry.id) : null
+    const center = coverage ? (coverage.startMs + coverage.endMs) / 2 : simTimeMs
+    const spanDays = coverage ? (coverage.endMs - coverage.startMs) / 86_400_000 : entry.data.orbitalPeriodDays
+    entry.orbitPoints = moonOrbitPath(entry.id, center, spanDays, coverage ? 360 : 180).map((v) =>
       eclipticKmVecToScene(v, new THREE.Vector3())
     )
     entry.orbitBuiltAtMs = simTimeMs
@@ -396,7 +414,15 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   }
 
   function placeOnTrack(entry: BodyEntry, simTimeMs: number): boolean {
-    const p = entry.type === 'moon' ? moonPosition(entry.id, simTimeMs) : null
+    const tracked = entry.type === 'moon' || entry.type === 'spacecraft'
+    const p = tracked ? moonPosition(entry.id, simTimeMs) : null
+    if (entry.type === 'spacecraft') {
+      entry.pivot.visible = p !== null
+      if (!p) {
+        entry.trackActive = false
+        return true
+      }
+    }
     if (!p) {
       if (entry.trackActive) {
         entry.trackActive = false
@@ -411,8 +437,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       entry.orbitBuiltAtMs = Number.NaN
     }
     eclipticKmVecToScene(p, entry.pivot.position)
-    const quarterPeriodMs = (entry.data.orbitalPeriodDays * 86_400_000) / 4
-    if (!(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < quarterPeriodMs)) rebuildTrackOrbit(entry, simTimeMs)
+    const rebuildAfterMs = entry.type === 'spacecraft' ? Number.POSITIVE_INFINITY : (entry.data.orbitalPeriodDays * 86_400_000) / 4
+    if (!(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < rebuildAfterMs)) rebuildTrackOrbit(entry, simTimeMs)
     return true
   }
 
@@ -440,7 +466,11 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     }
     scene.updateMatrixWorld()
     for (const entry of list) updateCometTail(entry)
-    markerEntries.forEach((marker, i) => list[i]!.mesh.getWorldPosition(marker.worldKm))
+    markerEntries.forEach((marker, i) => {
+      const entry = list[i]!
+      entry.mesh.getWorldPosition(marker.worldKm)
+      marker.hidden = entry.type === 'spacecraft' && !entry.pivot.visible
+    })
   }
 
   function updateView(camera: THREE.PerspectiveCamera, viewportHeight: number, selectedId: string | null, orbitsOn: boolean): void {
@@ -449,7 +479,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       if (!entry.orbitLine || !entry.orbitMaterial) continue
       const selected = entry.id === selectedId
       entry.orbitMaterial.opacity = selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity
-      let visible = orbitsOn || selected
+      let visible = (orbitsOn || selected) && (entry.type !== 'spacecraft' || entry.trackActive)
       if (visible && entry.parentId) {
         const parent = byId.get(entry.parentId)
         if (parent) {
@@ -484,7 +514,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       planetId: planet.id,
       set,
       memberIds: members.map((m) => m.id),
-      outerOrbitKm: Math.max(...members.map((m) => m.semiMajorAxisKm)),
+      outerOrbitKm: Math.max(0, ...members.filter((m) => m.type === 'moon').map((m) => m.semiMajorAxisKm)),
     })
   }
   updateFrame(initialSimTimeMs, 0)
