@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
 import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered, trackCoverage } from '../ephemeris/moonStore'
+import { onSatellitesRegistered, satelliteOrbit, satelliteOrbitPath, satellitePosition } from '../satellites/store'
+import { isOptionalBody } from './coverage'
 import { earthOrientation } from './earthOrientation'
 import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
@@ -23,6 +25,7 @@ const TAIL_MIN_KM = 2e5
 const TAIL_MAX_KM = 6e7
 const COMET_DASH_KM = 5e6
 const COMET_GAP_KM = 3e6
+const SATELLITE_REBUILDS_PER_FRAME = 4
 
 const _tailDir = new THREE.Vector3()
 const _worldPos = new THREE.Vector3()
@@ -299,7 +302,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     pivot.add(tiltGroup)
 
     const radiusKm = body.type === 'star' ? SUN_RADIUS_KM : body.radiusKm
-    const mesh = body.type === 'spacecraft' ? buildSpacecraftMesh() : new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
+    const mesh = isOptionalBody(body.type) ? buildSpacecraftMesh() : new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
     mesh.scale.setScalar(radiusKm)
     mesh.userData.bodyId = body.id
     tiltGroup.add(mesh)
@@ -400,7 +403,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   const sun = planetsData.find((b) => b.type === 'star')
   if (!sun) throw new Error('planet data has no star')
   const primaries = planetsData.filter((b) => b.type === 'planet' || b.type === 'dwarfPlanet' || b.type === 'comet' || b.type === 'asteroid')
-  const moons = planetsData.filter((b) => b.type === 'moon' || b.type === 'spacecraft')
+  const moons = planetsData.filter((b) => b.type === 'moon' || isOptionalBody(b.type))
+  let satelliteRebuildBudget = SATELLITE_REBUILDS_PER_FRAME
 
   makeEntry(sun, null, 0)
   primaries.forEach((body, i) => makeEntry(body, null, i + 1))
@@ -428,10 +432,24 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     writeOrbitBuffer(entry, entry.orbitOrigin.set(0, 0, 0))
   }
 
+  function rebuildSatelliteOrbit(entry: BodyEntry, simTimeMs: number): void {
+    const orbit = satelliteOrbit(entry.id)
+    if (!orbit || Math.abs(simTimeMs - entry.orbitBuiltAtMs) < orbit.periodMs / 8) return
+    if ((entry.orbitLine && !entry.orbitLine.visible) || satelliteRebuildBudget <= 0) return
+    satelliteRebuildBudget--
+    entry.orbitPoints = satelliteOrbitPath(entry.id, simTimeMs).map((v) => eclipticKmVecToScene(v, new THREE.Vector3()))
+    entry.orbitBuiltAtMs = simTimeMs
+    writeOrbitBuffer(entry, entry.orbitOrigin.set(0, 0, 0))
+  }
+
+  function trackPosition(entry: BodyEntry, simTimeMs: number) {
+    if (entry.type === 'satellite') return satellitePosition(entry.id, simTimeMs)
+    return entry.type === 'moon' || entry.type === 'spacecraft' ? moonPosition(entry.id, simTimeMs) : null
+  }
+
   function placeOnTrack(entry: BodyEntry, simTimeMs: number): boolean {
-    const tracked = entry.type === 'moon' || entry.type === 'spacecraft'
-    const p = tracked ? moonPosition(entry.id, simTimeMs) : null
-    if (entry.type === 'spacecraft') {
+    const p = trackPosition(entry, simTimeMs)
+    if (isOptionalBody(entry.type)) {
       entry.pivot.visible = p !== null
       if (!p) {
         entry.trackActive = false
@@ -452,6 +470,10 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       entry.orbitBuiltAtMs = Number.NaN
     }
     eclipticKmVecToScene(p, entry.pivot.position)
+    if (entry.type === 'satellite') {
+      rebuildSatelliteOrbit(entry, simTimeMs)
+      return true
+    }
     const rebuildAfterMs = entry.type === 'spacecraft' && !periodFitsCoverage(entry) ? Number.POSITIVE_INFINITY : (entry.data.orbitalPeriodDays * 86_400_000) / 4
     if (!(Math.abs(simTimeMs - entry.orbitBuiltAtMs) < rebuildAfterMs)) rebuildTrackOrbit(entry, simTimeMs)
     return true
@@ -469,6 +491,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   }
 
   function updateFrame(simTimeMs: number, deltaSimHours: number): void {
+    satelliteRebuildBudget = SATELLITE_REBUILDS_PER_FRAME
     for (const entry of list) {
       if (entry.type !== 'star') {
         placeAt(entry, simTimeMs)
@@ -492,7 +515,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     markerEntries.forEach((marker, i) => {
       const entry = list[i]!
       entry.mesh.getWorldPosition(marker.worldKm)
-      marker.hidden = entry.type === 'spacecraft' && !entry.pivot.visible
+      marker.hidden = isOptionalBody(entry.type) && !entry.pivot.visible
     })
   }
 
@@ -502,7 +525,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       if (!entry.orbitLine || !entry.orbitMaterial) continue
       const selected = entry.id === selectedId
       entry.orbitMaterial.opacity = selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity
-      let visible = (orbitsOn || selected) && (entry.type !== 'spacecraft' || entry.trackActive)
+      let visible = (orbitsOn || selected) && (!isOptionalBody(entry.type) || entry.trackActive)
       if (visible && entry.parentId && entry.parentId !== 'sun') {
         const parent = byId.get(entry.parentId)
         if (parent) {
@@ -528,6 +551,17 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   const unsubscribeSets = onSetRegistered(() => {
     for (const entry of list) if (entry.trackActive) entry.orbitBuiltAtMs = Number.NaN
   })
+
+  function adoptSatelliteOrbits(): void {
+    list.forEach((entry, i) => {
+      if (entry.type !== 'satellite') return
+      entry.semiMajorAxisKm = satelliteOrbit(entry.id)?.semiMajorAxisKm ?? 0
+      markerEntries[i]!.orbitRadiusKm = entry.semiMajorAxisKm
+      entry.orbitBuiltAtMs = Number.NaN
+    })
+  }
+  adoptSatelliteOrbits()
+  const unsubscribeSatellites = onSatellitesRegistered(adoptSatelliteOrbits)
 
   const moonSystems: MoonSystem[] = []
   for (const planet of list) {
@@ -555,7 +589,10 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     updateFrame,
     updateView,
     moonSystems,
-    dispose: unsubscribeSets,
+    dispose() {
+      unsubscribeSets()
+      unsubscribeSatellites()
+    },
     getBodyWorldPos(bodyId, target) {
       const entry = byId.get(bodyId)
       if (!entry) return target.set(0, 0, 0)

@@ -73,3 +73,28 @@ test('a spacecraft shows its mission, launch date and live distances', () => {
   expect(screen.getByText('From the Sun').parentElement).toHaveTextContent('—')
   expect(screen.getByText('Status').parentElement).toHaveTextContent('No trajectory data for this date')
 })
+
+import satelliteFixture from '../satellites/fixtures/frozen.json'
+import { satelliteRecords } from '../satellites/catalogue'
+import { parseSatellitesFile, registerSatellites, resetSatellites } from '../satellites/store'
+
+test('a satellite shows its purpose, launch, live altitude and speed, period and element date', () => {
+  resetSatellites()
+  const file = parseSatellitesFile(satelliteFixture)
+  registerSatellites(file)
+  const epoch = Date.parse(`${file.satellites.find((s) => s.id === 'iss')!.omm.EPOCH}Z`)
+  const store = createAppStore(() => epoch + 86_400_000)
+  store.getState().setBodies(satelliteRecords().filter((b) => b.id === 'iss'))
+  store.getState().select('iss')
+  render(<InfoPanel store={store} />)
+  const row = (label: string) => screen.getByText(label).parentElement!.querySelector('.stat-value')!.textContent
+  expect(row('Purpose')).toBe('Crewed orbital laboratory')
+  expect(row('Launched')).toBe('Nov 20, 1998')
+  expect(row('Altitude')).toMatch(/^4\d\d km$/)
+  expect(row('Speed')).toMatch(/^7\.6\d km\/s$/)
+  expect(row('Orbital period')).toMatch(/^9\d\.\d min$/)
+  expect(row('Elements')).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 2026$/)
+  expect(row('Status')).toBe('Tracking')
+  expect(row('Position')).toBe('Accurate')
+  expect(screen.queryByText('Radius')).toBeNull()
+})

@@ -1,3 +1,9 @@
+import type { BodyType } from '../types/body'
+
+export function isOptionalBody(type: BodyType): boolean {
+  return type === 'spacecraft' || type === 'satellite'
+}
+
 export interface CoverageActions {
   deselect: boolean
   stopFollow: boolean

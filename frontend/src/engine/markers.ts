@@ -101,7 +101,7 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
         const projection = projectToScreen(entry.worldKm, camera, width, height)
         const distance = camera.position.distanceTo(entry.worldKm)
         const tinyMoonSystem =
-          entry.type === 'moon' && !selected && !moonVisible(projectedRadiusPx(entry.orbitRadiusKm, distance, fovY, height))
+          (entry.type === 'moon' || entry.type === 'satellite') && !selected && !moonVisible(projectedRadiusPx(entry.orbitRadiusKm, distance, fovY, height))
         if (entry.hidden || !projection.visible || tinyMoonSystem) {
           el.button.style.display = 'none'
           continue

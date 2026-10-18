@@ -162,3 +162,79 @@ test('Earth and its clouds take their real orientation from the sim time', () =>
   expect(new THREE.Vector3(0, 1, 0).applyQuaternion(clouds).angleTo(new THREE.Vector3(0, 1, 0).applyQuaternion(want))).toBeLessThan(1e-9)
   bodies.dispose()
 })
+
+import satelliteFixture from '../satellites/fixtures/frozen.json'
+import { parseSatellitesFile, registerSatellites, resetSatellites, satellitePosition } from '../satellites/store'
+
+const satFile = parseSatellitesFile(satelliteFixture)
+const issEpochMs = Date.parse(`${satFile.satellites.find((s) => s.id === 'iss')!.omm.EPOCH}Z`)
+const satBody = (id: string): Body => ({
+  ...base,
+  id,
+  name: id.toUpperCase(),
+  type: 'satellite',
+  parent: 'earth',
+  radiusKm: 0.05,
+  distanceFromParentKm: 0,
+  orbitalPeriodDays: Number.NaN,
+  rotationPeriodHours: 0,
+  axialTiltDeg: Number.NaN,
+  meanTempC: Number.NaN,
+  moonCount: Number.NaN,
+})
+
+test('a satellite is hidden until its elements register, then sits at its SGP4 position around Earth', () => {
+  resetSatellites()
+  const t = issEpochMs + 3_600_000
+  const bodies = createBodies(new THREE.Scene(), [...data, satBody('iss')], textures, t)
+  bodies.updateFrame(t, 0)
+  expect(bodies.byId.get('iss')!.pivot.visible).toBe(false)
+  expect(bodies.markerEntries.find((m) => m.id === 'iss')!.hidden).toBe(true)
+  registerSatellites(satFile)
+  bodies.updateFrame(t, 0)
+  expect(bodies.byId.get('iss')!.pivot.visible).toBe(true)
+  expect(bodies.markerEntries.find((m) => m.id === 'iss')!.hidden).toBe(false)
+  const rel = bodies.getBodyWorldPos('iss', new THREE.Vector3()).sub(bodies.getBodyWorldPos('earth', new THREE.Vector3()))
+  expect(rel.distanceTo(eclipticKmVecToScene(satellitePosition('iss', t)!, new THREE.Vector3()))).toBeLessThan(1e-3)
+  expect(bodies.markerEntries.find((m) => m.id === 'iss')!.orbitRadiusKm).toBeGreaterThan(6700)
+  expect(bodies.byId.get('iss')!.orbitPoints).toHaveLength(181)
+  bodies.dispose()
+})
+
+test('satellite orbits only show once the Earth system is big on screen', () => {
+  resetSatellites()
+  registerSatellites(satFile)
+  const t = issEpochMs + 3_600_000
+  const bodies = createBodies(new THREE.Scene(), [...data, satBody('iss')], textures, t)
+  bodies.updateFrame(t, 0)
+  const earth = bodies.getBodyWorldPos('earth', new THREE.Vector3())
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  const look = (distanceKm: number) => {
+    cam.position.copy(earth).add(new THREE.Vector3(0, distanceKm, distanceKm))
+    cam.lookAt(earth)
+    cam.updateMatrixWorld()
+    bodies.updateView(cam, 800, null, true)
+    return bodies.byId.get('iss')!.orbitLine!.visible
+  }
+  expect(look(5e7)).toBe(false)
+  expect(look(3e4)).toBe(true)
+  bodies.dispose()
+})
+
+test('at most four satellite orbits rebuild in one frame after a time jump', () => {
+  resetSatellites()
+  const iss = satFile.satellites.find((s) => s.id === 'iss')!
+  const extra = ['iss-b', 'iss-c'].map((id) => ({ id, omm: iss.omm }))
+  registerSatellites({ ...satFile, satellites: [...satFile.satellites, ...extra] })
+  const ids = ['iss', 'hubble', 'goes-19', 'chandra', 'iss-b', 'iss-c']
+  const t0 = issEpochMs
+  const bodies = createBodies(new THREE.Scene(), [...data, ...ids.map(satBody)], textures, t0)
+  for (let k = 0; k < 3; k++) bodies.updateFrame(t0, 0)
+  const t1 = t0 + 86_400_000
+  bodies.updateFrame(t1, 24)
+  const rebuilt = () => bodies.list.filter((e) => e.type === 'satellite' && e.orbitBuiltAtMs === t1).length
+  expect(rebuilt()).toBe(4)
+  bodies.updateFrame(t1, 0)
+  expect(rebuilt()).toBe(6)
+  bodies.dispose()
+})

@@ -2,6 +2,7 @@ import type { EngineHandle } from './engine/engine'
 import type { AppStore } from './state/store'
 import type { SmallBodiesData } from './ephemeris/smallBodies'
 import { appendUnique, mergeSmallBodies } from './smallBodyRecords'
+import { satelliteRecords } from './satellites/catalogue'
 import { spacecraftRecords } from './spacecraft/catalogue'
 import type { Body } from './types/body'
 
@@ -20,7 +21,7 @@ export async function startApp({ store, fetchPlanets, fetchSmallBodies, createEn
   try {
     const [planets, small] = await Promise.all([fetchPlanets(), fetchSmallBodies ? fetchSmallBodies().catch(() => null) : null])
     const withSmall = small ? mergeSmallBodies(planets, small) : planets
-    store.getState().setBodies(appendUnique(withSmall, spacecraftRecords()))
+    store.getState().setBodies(appendUnique(withSmall, [...spacecraftRecords(), ...satelliteRecords()]))
     createEngine(store, small)
   } catch (err) {
     console.error('Failed to start solar system:', err)

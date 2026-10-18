@@ -110,3 +110,14 @@ test('a hidden entry gets no marker', () => {
   layer.update([entry({ hidden: true })], camera, 800, 400, null)
   expect(container.querySelector<HTMLButtonElement>('button[aria-label="Mars"]')!.style.display).toBe('none')
 })
+
+test('satellite markers hide while their orbit is tiny on screen', () => {
+  const layer = createMarkerLayer(container, () => {})
+  const sat = entry({ id: 'iss', name: 'ISS', type: 'satellite', orbitRadiusKm: 6800 })
+  layer.update([sat], camera, 800, 400, null)
+  expect(container.querySelector<HTMLButtonElement>('button[aria-label="ISS"]')!.style.display).toBe('none')
+  camera.position.set(0, 0, 2e4)
+  camera.updateMatrixWorld()
+  layer.update([sat], camera, 800, 400, null)
+  expect(container.querySelector<HTMLButtonElement>('button[aria-label="ISS"]')!.style.display).not.toBe('none')
+})

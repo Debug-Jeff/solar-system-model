@@ -9,3 +9,12 @@ test('losing coverage deselects and stops following that craft only', () => {
   expect(coverageActions('mars', 'mars', hidden)).toEqual({ deselect: false, stopFollow: false })
   expect(coverageActions(null, null, hidden)).toEqual({ deselect: false, stopFollow: false })
 })
+
+import { isOptionalBody } from './coverage'
+
+test('spacecraft and satellites can lose their data; everything else cannot', () => {
+  expect(isOptionalBody('spacecraft')).toBe(true)
+  expect(isOptionalBody('satellite')).toBe(true)
+  expect(isOptionalBody('moon')).toBe(false)
+  expect(isOptionalBody('planet')).toBe(false)
+})
