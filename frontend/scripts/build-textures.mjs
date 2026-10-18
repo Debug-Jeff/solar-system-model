@@ -1,9 +1,11 @@
-import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
+import { FloatType } from 'three'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js'
 
 const frontend = join(dirname(fileURLToPath(import.meta.url)), '..')
 const cache = process.env.TEXTURE_CACHE ?? join(frontend, '..', '.texture-cache')
@@ -188,6 +190,41 @@ await generated('uranus', 'uranus', 'color', 2048, bandedGiant(61, [[160, 214, 2
 await generated('neptune', 'neptune', 'color', 2048, bandedGiant(71, [[64, 104, 196], [74, 118, 214], [58, 92, 182], [86, 132, 222], [62, 100, 190], [70, 112, 206], [56, 88, 176]], 0.005, 0.03))
 await ring('saturnRing', 'saturn', 'ring', saturnRing)
 await ring('uranusRing', 'uranus', 'ring', uranusRing)
+
+async function milkyWay() {
+  const file = await download(`${SVS}/a004800/a004851/milkyway_2020_4k.exr`)
+  const bytes = readFileSync(file)
+  const exr = new EXRLoader().setDataType(FloatType).parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
+  const { width, height, data } = exr
+  const channels = data.length / (width * height)
+  const lum = new Float32Array(width * height)
+  for (let i = 0; i < width * height; i++) lum[i] = 0.2126 * data[i * channels] + 0.7152 * data[i * channels + 1] + 0.0722 * data[i * channels + 2]
+  const white = Float32Array.from(lum).sort()[Math.floor(lum.length * 0.998)]
+  const encode = (v) => {
+    const x = Math.min(1, Math.max(0, v))
+    return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055))
+  }
+  const sample = (raDeg, decDeg, flipped) => {
+    const x = Math.floor((((0.5 - raDeg / 360) % 1) + 1) % 1 * width)
+    const row = Math.floor(((90 - decDeg) / 180) * height)
+    return lum[(flipped ? height - 1 - row : row) * width + x]
+  }
+  const flipped = sample(266.4, -28.9, false) < sample(266.4, 28.9, false)
+  const pixels = Buffer.alloc(width * height * 3)
+  for (let y = 0; y < height; y++) {
+    const src = flipped ? height - 1 - y : y
+    for (let x = 0; x < width; x++) {
+      const i = src * width + x
+      for (let c = 0; c < 3; c++) {
+        const v = data[i * channels + c] / white
+        pixels[(y * width + x) * 3 + c] = encode(v / (1 + 0.35 * v))
+      }
+    }
+  }
+  console.log(`milky way: ${width}x${height}, rows ${flipped ? 'flipped' : 'as stored'}, galactic centre ${sample(266.4, -28.9, flipped).toFixed(3)} vs Hercules ${sample(266.4, 28.9, flipped).toFixed(3)}`)
+  await emit('milkyWay', 'sky', 'milkyway', () => sharp(pixels, { raw: { width, height, channels: 3 } }), width, 'NASA/Goddard Space Flight Center Scientific Visualization Studio, Deep Star Maps 2020 (Milky Way); Gaia DR2: ESA/Gaia/DPAC')
+}
+await milkyWay()
 
 const BUDGET_MB = { low: 2, medium: 6, high: 18 }
 for (const [tier, limit] of Object.entries(BUDGET_MB)) {
