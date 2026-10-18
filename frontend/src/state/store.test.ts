@@ -141,3 +141,11 @@ test('setLayer toggles one layer only', () => {
   st().setLayer('orbits', false)
   expect(st().layers).toEqual({ orbits: false, labels: true, liveEarthTexture: false, constellations: false, meteorShowers: true })
 })
+
+test('setSimTimeMs jumps to a moment and clamps to the supported range', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 18))
+  store.getState().setSimTimeMs(Date.UTC(2030, 0, 1, 6))
+  expect(store.getState().simTimeMs).toBe(Date.UTC(2030, 0, 1, 6))
+  store.getState().setSimTimeMs(Date.UTC(1700, 0, 1))
+  expect(store.getState().simTimeMs).toBe(MIN_SIM_MS)
+})

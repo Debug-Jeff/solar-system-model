@@ -22,6 +22,7 @@ import type { SmallBodiesData } from '../ephemeris/smallBodies'
 import { createKeplerBelt } from './belts'
 import { createTapDetector } from './tap'
 import { createModelLoader, gltfLoad } from './models'
+import { viewBridge } from './viewBridge'
 import { browserQualityEnv, detectQuality, QUALITY } from './quality'
 import { createTextures, loadLiveEarthTexture } from './textures'
 
@@ -53,6 +54,10 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   })
   const parts = createScene(canvas, quality)
   const { scene, camera, renderer, controls } = parts
+  viewBridge.setReader(() => {
+    const offset = camera.position.clone().sub(controls.target)
+    return { bodyId: store.getState().followId, offsetKm: [offset.x, offset.y, offset.z] }
+  })
 
   const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs, createModelLoader(gltfLoad()))
   const markers = createMarkerLayer(labelsLayer, (id) => store.getState().select(id))
@@ -68,7 +73,13 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     if (!entry) return
     controls.zoomToCursor = false
     controls.minDistance = followMinDistance(entry.radiusKm)
-    follow.start(flyToDistance(entry.radiusKm), performance.now())
+    const shared = viewBridge.takePending(id)
+    if (shared) {
+      const direction = new THREE.Vector3(...shared)
+      follow.start(direction.length(), performance.now(), direction)
+    } else {
+      follow.start(flyToDistance(entry.radiusKm), performance.now())
+    }
   }
 
   function stopFollowing(): void {

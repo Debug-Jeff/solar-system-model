@@ -38,6 +38,7 @@ export interface AppActions {
   goLive(): void
   resyncIfLive(wasLive: boolean): void
   jumpToDate(isoDate: string): boolean
+  setSimTimeMs(ms: number): void
   select(id: string | null): void
   stopFollow(): void
   setLayer(layer: keyof AppState['layers'], on: boolean): void
@@ -116,6 +117,7 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
       set({ simTimeMs: ms })
       return true
     },
+    setSimTimeMs: (ms) => set({ simTimeMs: Math.min(MAX_SIM_MS, Math.max(MIN_SIM_MS, ms)) }),
     select: (id) =>
       set((s) => (id === null ? { selectedId: null } : { selectedId: id, followId: id, followSeq: s.followSeq + 1 })),
     stopFollow: () => set({ followId: null }),

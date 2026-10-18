@@ -20,7 +20,7 @@ export function flyToDistance(radiusKm: number): number {
 
 export interface CameraFlight {
   readonly active: boolean
-  start(distanceKm: number, nowMs: number): void
+  start(distanceKm: number, nowMs: number, direction?: THREE.Vector3): void
   update(targetKm: THREE.Vector3, nowMs: number): boolean
 }
 
@@ -37,10 +37,11 @@ export function createCameraFlight(camera: THREE.PerspectiveCamera, controls: Or
     get active() {
       return active
     },
-    start(distanceKm, nowMs) {
+    start(distanceKm, nowMs, towards) {
       fromCamera.copy(camera.position)
       fromTarget.copy(controls.target)
-      direction.copy(camera.position).sub(controls.target)
+      if (towards) direction.copy(towards)
+      else direction.copy(camera.position).sub(controls.target)
       if (direction.lengthSq() === 0) direction.copy(FALLBACK_DIRECTION)
       direction.normalize()
       distance = distanceKm

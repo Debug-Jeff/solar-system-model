@@ -90,3 +90,26 @@ test('the curated Earth satellites are added as children of Earth', async () => 
   expect(sats.length).toBeGreaterThanOrEqual(20)
   expect(sats.every((s) => s.parent === 'earth')).toBe(true)
 })
+
+import { viewBridge } from './engine/viewBridge'
+
+test('a shared link selects its object at its time and queues its view', async () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 18))
+  await startApp({
+    store,
+    fetchPlanets: async () => [{ id: 'sun', name: 'Sun' }] as Body[],
+    createEngine: vi.fn(() => ({ dispose: () => {} })),
+    isDev: false,
+    shareSearch: '?o=sun&t=2001-02-03T04:05:06Z&v=0,10,20',
+  })
+  expect(store.getState().selectedId).toBe('sun')
+  expect(store.getState().simTimeMs).toBe(Date.UTC(2001, 1, 3, 4, 5, 6))
+  expect(viewBridge.takePending('sun')).toEqual([0, 10, 20])
+})
+
+test('a broken shared link is ignored', async () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 18))
+  await startApp({ store, fetchPlanets: async () => [{ id: 'sun', name: 'Sun' }] as Body[], createEngine: vi.fn(() => ({ dispose: () => {} })), isDev: false, shareSearch: '?o=%3Cscript%3E&t=nope' })
+  expect(store.getState().selectedId).toBeNull()
+  expect(store.getState().simTimeMs).toBe(Date.UTC(2026, 9, 18))
+})

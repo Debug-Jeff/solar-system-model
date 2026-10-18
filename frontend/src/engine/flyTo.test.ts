@@ -59,3 +59,14 @@ test('followMinDistance lets the camera reach small craft but never inside a pla
   expect(followMinDistance(0.0001)).toBe(0.002)
   expect(followMinDistance(6371)).toBe(1)
 })
+
+test('a flight can be told which way to arrive from', () => {
+  const camera = new THREE.PerspectiveCamera()
+  camera.position.set(100, 0, 0)
+  const controls = { target: new THREE.Vector3(), update: () => {} } as unknown as import('three/examples/jsm/controls/OrbitControls.js').OrbitControls
+  const flight = createCameraFlight(camera, controls)
+  const target = new THREE.Vector3(5, 5, 5)
+  flight.start(10, 0, new THREE.Vector3(0, 2, 0))
+  flight.update(target, FLIGHT_MS + 1)
+  expect(camera.position.distanceTo(new THREE.Vector3(5, 15, 5))).toBeLessThan(1e-9)
+})
