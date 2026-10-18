@@ -3,7 +3,7 @@ import bundledManifest from '../../public/models/manifest.json'
 
 export interface ModelManifest {
   version: number
-  models: Record<string, { file: string; credit: string }>
+  models: Record<string, { file: string; credit: string; sizeKm?: number }>
 }
 
 export type LoadModel = (url: string) => Promise<THREE.Object3D>
@@ -46,7 +46,7 @@ export function createModelLoader(load: LoadModel, manifest: ModelManifest = bun
       let pending = craft.get(id)
       if (!pending) {
         pending = loadFile(entry.file)
-          .then((source) => (source ? normalizeModel(source.clone(true), sizeKm) : null))
+          .then((source) => (source ? normalizeModel(source.clone(true), entry.sizeKm ?? sizeKm) : null))
           .catch((err: unknown) => {
             console.warn(`3D model could not be prepared: ${id}`, err)
             return null

@@ -39,7 +39,7 @@ export function createSunGlow(): THREE.Group {
     [1, 'rgba(255,150,60,0)'],
   ])
   const group = new THREE.Group()
-  group.add(sprite(core, 0.12, 1, false), sprite(halo, 0.42, 0.55, false), sprite(halo, 1.1, 0.18, false))
+  group.add(sprite(core, 0.1, 1, false), sprite(halo, 0.3, 0.5, false), sprite(halo, 0.6, 0.12, false))
   return group
 }
 

@@ -100,6 +100,36 @@
       "file": "models/geostationary-operational-environmental-satellites.glb",
       "source": "NASA-3D-Resources/3D Models/Geostationary Operational Environmental Satellites/Geostationary Operational Environmental Satellites.glb",
       "credit": "NASA 3D Resources (described by NASA as free and without copyright; used under NASA media usage guidelines; no endorsement implied)"
+    },
+    "vesta": {
+      "file": "models/vesta-1-100.glb",
+      "source": "https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/v/Vesta_1_100.glb",
+      "credit": "NASA Visualization Technology Applications and Development (VTAD), science.nasa.gov 3D resources",
+      "sizeKm": 572.6
+    },
+    "eros": {
+      "file": "models/eros-1-10.glb",
+      "source": "https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/e/Eros_1_10.glb",
+      "credit": "NASA Visualization Technology Applications and Development (VTAD), science.nasa.gov 3D resources",
+      "sizeKm": 34.4
+    },
+    "itokawa": {
+      "file": "models/itokawa-1-1.glb",
+      "source": "https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/i/Itokawa_1_1.glb",
+      "credit": "NASA Visualization Technology Applications and Development (VTAD), science.nasa.gov 3D resources",
+      "sizeKm": 0.535
+    },
+    "bennu": {
+      "file": "models/bennu-1-1.glb",
+      "source": "https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/b/Bennu_1_1.glb",
+      "credit": "NASA Visualization Technology Applications and Development (VTAD), science.nasa.gov 3D resources",
+      "sizeKm": 0.565
+    },
+    "arrokoth": {
+      "file": "models/arrokoth.glb",
+      "source": "https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/a/Arrokoth.glb",
+      "credit": "NASA Visualization Technology Applications and Development (VTAD), science.nasa.gov 3D resources",
+      "sizeKm": 36
     }
   }
 }

@@ -1,4 +1,3 @@
-import { ActiveShowers } from './ActiveShowers'
 import { useState } from 'react'
 import { CreditsDialog } from './Credits'
 import { DateModal } from './DateModal'
@@ -17,7 +16,6 @@ export function App({ store }: StoreProps) {
       <TopBar store={store} />
       <InfoPanel store={store} />
       <footer id="hud-bottom">
-        <ActiveShowers store={store} />
         <TimeBar store={store} />
       </footer>
       <RightRail store={store}>

@@ -163,3 +163,10 @@ test('setRate, zoomBy and toggleInfo drive the new HUD controls', () => {
   store.getState().toggleInfo()
   expect(store.getState().infoCollapsed).toBe(true)
 })
+
+test('moving the rate dial resumes time that stopped at the edge of the date range', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 18))
+  store.setState({ paused: true })
+  store.getState().setRate(60)
+  expect(store.getState().paused).toBe(false)
+})

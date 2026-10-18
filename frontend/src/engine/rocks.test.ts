@@ -18,3 +18,11 @@ test('rocks are lumpy, roughly unit-sized and the same every time for the same b
   expect(Math.min(...a)).toBeGreaterThan(0.3)
   expect(radii(rockGeometry('eros'))).not.toEqual(a)
 })
+
+test('rocks carry per-vertex colour so craters and ridges read as rock', () => {
+  const colors = rockGeometry('ida').getAttribute('color')
+  expect(colors).toBeDefined()
+  const greys = new Set<number>()
+  for (let i = 0; i < colors.count; i++) greys.add(Math.round(colors.getX(i) * 50))
+  expect(greys.size).toBeGreaterThan(5)
+})

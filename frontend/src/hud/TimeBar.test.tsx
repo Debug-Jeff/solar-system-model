@@ -35,7 +35,7 @@ test('speeding up leaves LIVE; clicking LIVE comes back', async () => {
   expect(screen.getByRole('button', { name: 'Go live' })).toHaveClass('live')
 })
 
-test('the dial and pause drive the store, and there are no step buttons', async () => {
+test('the dial drives the store, and there are no step or pause buttons', () => {
   fireEvent.keyDown(dial(), { key: 'ArrowRight' })
   fireEvent.keyDown(dial(), { key: 'ArrowRight' })
   fireEvent.keyDown(dial(), { key: 'ArrowLeft' })
@@ -44,8 +44,7 @@ test('the dial and pause drive the store, and there are no step buttons', async 
   expect(screen.getByText('−1 min/s')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Faster' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Reverse' })).toBeNull()
-  await userEvent.click(screen.getByTitle('Play/Pause'))
-  expect(screen.getByText('PAUSED')).toBeInTheDocument()
+  expect(screen.queryByTitle('Play/Pause')).toBeNull()
 })
 
 test('shows local date, time and zone for the sim time', () => {

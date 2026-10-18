@@ -371,3 +371,17 @@ test('asteroids and comets are rocks, not spheres, and comets carry a glowing co
   expect(bodies.byId.get('halley')!.mesh.children.some((c) => c instanceof THREE.Sprite)).toBe(true)
   bodies.dispose()
 })
+
+test('an asteroid with a real NASA shape model swaps it in when selected', async () => {
+  const models = createModelLoader(async () => new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1), new THREE.MeshStandardMaterial()), { version: 1, models: { bennu: { file: 'models/bennu.glb', credit: 'NASA', sizeKm: 0.565 } } })
+  const rocky: Body[] = [...data, { ...base, id: 'bennu', name: 'Bennu', type: 'asteroid', radiusKm: 0.25, distanceFromSunAU: 1.1, color: '#c9a77a' }]
+  const bodies = createBodies(new THREE.Scene(), rocky, textures, inside, models)
+  bodies.updateFrame(inside, 0)
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  cam.position.set(0, 0, 1e9)
+  cam.updateMatrixWorld()
+  bodies.updateView(cam, 800, 'bennu', true)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(bodies.byId.get('bennu')!.model).not.toBeNull()
+  bodies.dispose()
+})

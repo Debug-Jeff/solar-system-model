@@ -31,6 +31,7 @@ const COMET_DASH_KM = 5e6
 const COMET_GAP_KM = 3e6
 const SATELLITE_REBUILDS_PER_FRAME = 4
 const MODEL_LOAD_RADII = 400
+const hasModelType = (type: BodyType) => isOptionalBody(type) || type === 'asteroid' || type === 'comet'
 const TRAIL_REBUILDS_PER_FRAME = 8
 const DEFAULT_TRAIL_DAYS = 30
 const DAY_MS = 86_400_000
@@ -286,6 +287,7 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
   if (body.type === 'asteroid' || body.type === 'comet') {
     params.color = new THREE.Color(body.type === 'comet' ? '#5d5650' : '#8c8070')
     params.flatShading = true
+    params.vertexColors = true
   }
   return new THREE.MeshStandardMaterial(params)
 }
@@ -638,7 +640,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   function requestModels(camera: THREE.Camera, selectedId: string | null): void {
     if (!models) return
     for (const entry of list) {
-      if (entry.modelRequested || !isOptionalBody(entry.type) || !entry.pivot.visible || !models.has(entry.id)) continue
+      if (entry.modelRequested || !hasModelType(entry.type) || !entry.pivot.visible || !models.has(entry.id)) continue
       entry.mesh.getWorldPosition(_worldPos)
       if (entry.id !== selectedId && camera.position.distanceTo(_worldPos) > MODEL_LOAD_RADII * entry.radiusKm) continue
       entry.modelRequested = true

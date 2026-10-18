@@ -11,8 +11,9 @@ const ceres: Body = { ...base, id: 'ceres', name: 'Ceres', type: 'dwarfPlanet', 
 const halley: Body = { ...base, id: 'halley', name: 'Halley', type: 'comet', color: '#3a3a3a' }
 const moon: Body = { ...base, id: 'moon', name: 'Moon', type: 'moon', color: '#cccccc', parent: 'earth' }
 
-test('planets use their own colour at normal opacity', () => {
-  expect(orbitColor(mars, null)).toEqual({ color: '#c1440e', opacity: ORBIT_OPACITY.normal })
+test('planet orbits are drawn brighter than small-body orbits', () => {
+  expect(orbitColor(mars, null)).toEqual({ color: '#c1440e', opacity: ORBIT_OPACITY.planet })
+  expect(ORBIT_OPACITY.planet).toBeGreaterThan(ORBIT_OPACITY.normal)
 })
 
 test('dwarf planets are a lighter version of their colour', () => {

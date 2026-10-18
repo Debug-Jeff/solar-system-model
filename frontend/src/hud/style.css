@@ -590,25 +590,6 @@ html, body {
   border-width: 3px;
 }
 
-#active-showers {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin: 0 auto 8px;
-  padding: 6px 14px;
-  width: fit-content;
-  max-width: calc(100vw - 32px);
-  font-size: 12px;
-  color: #d7ccff;
-  background: rgba(14, 18, 28, 0.62);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(184, 164, 255, 0.28);
-  border-radius: 999px;
-  text-align: center;
-  pointer-events: none;
-}
 
 #search {
   position: relative;
@@ -1307,4 +1288,24 @@ body {
 .credits-card::-webkit-scrollbar-thumb:hover,
 #layers-panel::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.34);
+}
+
+#title .home-btn {
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  text-shadow: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+#title .home-btn:hover {
+  color: #fff;
+}
+
+.marker.label-hidden .marker-label {
+  display: none;
 }

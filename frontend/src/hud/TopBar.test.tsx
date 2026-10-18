@@ -22,3 +22,14 @@ test('there is no menu or NASA image buttons any more', () => {
   expect(screen.queryByRole('button', { name: 'Picture of the Day' })).toBeNull()
   expect(screen.getByRole('button', { name: 'Share' })).toBeInTheDocument()
 })
+
+test('pressing Solar System stops following and zooms back out', async () => {
+  const store = createAppStore()
+  store.getState().setBodies([jupiter])
+  render(<TopBar store={store} />)
+  act(() => store.getState().select('jupiter'))
+  const before = store.getState().resetViewSeq
+  act(() => screen.getByRole('button', { name: /Solar System/ }).click())
+  expect(store.getState().followId).toBeNull()
+  expect(store.getState().resetViewSeq).toBe(before + 1)
+})

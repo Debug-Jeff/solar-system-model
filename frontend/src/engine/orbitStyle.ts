@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import type { Body } from '../types/body'
 
-export const ORBIT_OPACITY = { normal: 0.45, selected: 1, moon: 0.5 }
+export const ORBIT_OPACITY = { normal: 0.45, planet: 0.75, selected: 1, moon: 0.5 }
 export const COMET_ORBIT_COLOR = '#7fe0ff'
 export const ASTEROID_ORBIT_COLOR = '#c9a77a'
 export const SPACECRAFT_ORBIT_COLOR = '#4ade80'
@@ -38,7 +38,7 @@ export function orbitColor(body: Body, parent: Body | null): OrbitColor {
     case 'moon':
       return { color: parent?.color ?? own, opacity: ORBIT_OPACITY.moon }
     default:
-      return { color: own, opacity: ORBIT_OPACITY.normal }
+      return { color: own, opacity: ORBIT_OPACITY.planet }
   }
 }
 

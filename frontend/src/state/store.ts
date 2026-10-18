@@ -128,7 +128,7 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     setDateModalOpen: (open) => set({ dateModalOpen: open }),
     setLoading: (patch) => set((s) => ({ loading: { ...s.loading, ...patch } })),
     setRate: (rate) => {
-      if (RATE_STEPS.includes(Math.abs(rate))) set({ rate })
+      if (RATE_STEPS.includes(Math.abs(rate))) set({ rate, paused: false })
     },
     zoomBy: (factor) => set((s) => ({ zoom: { seq: s.zoom.seq + 1, factor } })),
     toggleInfo: () => set((s) => ({ infoCollapsed: !s.infoCollapsed })),

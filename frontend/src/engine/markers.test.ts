@@ -121,3 +121,18 @@ test('satellite markers hide while their orbit is tiny on screen', () => {
   layer.update([sat], camera, 800, 400, null)
   expect(container.querySelector<HTMLButtonElement>('button[aria-label="ISS"]')!.style.display).not.toBe('none')
 })
+
+test('planets that crowd each other keep their dot and only lose the label', () => {
+  const layer = createMarkerLayer(container, () => {})
+  layer.update([entry({ id: 'sun', name: 'Sun', type: 'star' }), entry({ worldKm: new THREE.Vector3(1e3, 0, 0) })], camera, 800, 400, null)
+  const mars = container.querySelector<HTMLButtonElement>('button[aria-label="Mars"]')!
+  expect(mars.style.display).not.toBe('none')
+  expect(mars.classList.contains('label-hidden')).toBe(true)
+  expect(container.querySelector<HTMLButtonElement>('button[aria-label="Sun"]')!.classList.contains('label-hidden')).toBe(false)
+})
+
+test('crowded small bodies still hide entirely', () => {
+  const layer = createMarkerLayer(container, () => {})
+  layer.update([entry({}), entry({ id: 'ceti', name: 'Ceti', type: 'asteroid', worldKm: new THREE.Vector3(1e3, 0, 0) })], camera, 800, 400, null)
+  expect(container.querySelector<HTMLButtonElement>('button[aria-label="Ceti"]')!.style.display).toBe('none')
+})
