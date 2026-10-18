@@ -6,6 +6,7 @@ export const COMET_ORBIT_COLOR = '#7fe0ff'
 export const ASTEROID_ORBIT_COLOR = '#c9a77a'
 export const SPACECRAFT_ORBIT_COLOR = '#4ade80'
 export const SATELLITE_ORBIT_COLOR = '#f472b6'
+export const METEOR_STREAM_COLOR = '#9f86ff'
 const DEFAULT_COLOR = '#8899aa'
 const DWARF_LIGHTNESS = 0.7
 

@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 import { activeShowers, streamBelt, type Shower } from '../meteors/showers'
 import { createKeplerBelt } from './belts'
+import { METEOR_STREAM_COLOR } from './orbitStyle'
 
-const STREAM_COLOR = 0x9f86ff
 const QUIET = { size: 1.2, opacity: 0.35 }
 const ACTIVE = { size: 2.2, opacity: 0.9 }
 
@@ -14,7 +14,7 @@ export interface MeteorStreams {
 }
 
 export function createMeteorStreams(scene: THREE.Scene, showers: readonly Shower[]): MeteorStreams {
-  const belts = showers.map((s) => createKeplerBelt(scene, streamBelt(s), STREAM_COLOR, QUIET.size, QUIET.opacity))
+  const belts = showers.map((s) => createKeplerBelt(scene, streamBelt(s), new THREE.Color(METEOR_STREAM_COLOR).getHex(), QUIET.size, QUIET.opacity))
   let activeKey = ''
   return {
     points: belts.map((b) => b.points),

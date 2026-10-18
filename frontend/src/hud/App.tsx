@@ -2,7 +2,7 @@ import { ActiveShowers } from './ActiveShowers'
 import { DateModal } from './DateModal'
 import { FollowIndicator } from './FollowIndicator'
 import { InfoPanel } from './InfoPanel'
-import { LayerToggles } from './LayerToggles'
+import { LayersPanel } from './LayersPanel'
 import { LoadingOverlay } from './LoadingOverlay'
 import { NasaPanel } from './NasaPanel'
 import { TimeBar } from './TimeBar'
@@ -19,7 +19,7 @@ export function App({ store }: StoreProps) {
       <footer id="hud-bottom">
         <ActiveShowers store={store} />
         <TimeBar store={store} />
-        <LayerToggles store={store} />
+        <LayersPanel store={store} />
       </footer>
       <FollowIndicator store={store} />
       <DateModal store={store} />
