@@ -11,6 +11,7 @@ export const INITIAL_CAMERA_POSITION = new THREE.Vector3(
 )
 export const DEFAULT_MIN_DISTANCE_KM = 1
 export const MAX_DISTANCE_KM = 200 * AU_KM
+export const ZOOM_SPEED = 4.5
 export const CAMERA_NEAR_KM = 1e-3
 export const CAMERA_FAR_KM = 1e11
 const SUN_GLOW_SCALE = 0.08
@@ -59,6 +60,7 @@ export function createScene(canvas: HTMLCanvasElement, quality: { pixelRatioCap:
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.06
+  controls.zoomSpeed = ZOOM_SPEED
   controls.minDistance = DEFAULT_MIN_DISTANCE_KM
   controls.maxDistance = MAX_DISTANCE_KM
   controls.target.set(0, 0, 0)

@@ -16,3 +16,12 @@ test('unprojecting the far plane (zoom-to-cursor) stays finite', () => {
 test('the star sphere and the farthest zoom fit inside the far plane', () => {
   expect(SKY_RADIUS_KM + MAX_DISTANCE_KM).toBeLessThan(CAMERA_FAR_KM)
 })
+
+import { ZOOM_SPEED } from './scene'
+
+test('zooming from the whole solar system down to Earth takes at most 50 wheel notches', () => {
+  const perNotch = Math.pow(0.95, ZOOM_SPEED)
+  const notches = Math.log(1e10 / 1e5) / -Math.log(perNotch)
+  expect(notches).toBeLessThanOrEqual(50)
+  expect(perNotch).toBeGreaterThan(0.6)
+})

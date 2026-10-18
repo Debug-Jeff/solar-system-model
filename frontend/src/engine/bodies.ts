@@ -103,6 +103,14 @@ export interface Bodies {
   getBodyWorldPos(bodyId: string, target: THREE.Vector3): THREE.Vector3
 }
 
+const ORBIT_FADE_START_PX = 4
+const ORBIT_FADE_END_PX = 30
+
+export function orbitFade(bodyRadiusPx: number): number {
+  const t = (bodyRadiusPx - ORBIT_FADE_START_PX) / (ORBIT_FADE_END_PX - ORBIT_FADE_START_PX)
+  return 1 - Math.min(1, Math.max(0, t))
+}
+
 function clamp01(t: number): number {
   return Math.min(1, Math.max(0, t))
 }
@@ -626,7 +634,9 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     for (const entry of list) {
       if (!entry.orbitLine || !entry.orbitMaterial) continue
       const selected = entry.id === selectedId
-      entry.orbitMaterial.opacity = selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity
+      entry.mesh.getWorldPosition(_worldPos)
+      const fade = orbitFade(projectedRadiusPx(entry.radiusKm, camera.position.distanceTo(_worldPos), fovY, viewportHeight))
+      entry.orbitMaterial.opacity = (selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity) * fade
       let visible = (orbitsOn || selected) && (!isOptionalBody(entry.type) || entry.trackActive)
       if (visible && entry.parentId && entry.parentId !== 'sun') {
         const parent = byId.get(entry.parentId)
@@ -636,7 +646,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
           visible = selected || moonVisible(px)
         }
       }
-      entry.orbitLine.visible = visible
+      entry.orbitLine.visible = visible && fade > 0
       const heliocentricTrack = entry.type === 'spacecraft' && entry.parentId === 'sun'
       if (!visible || !(entry.ephemerisId || heliocentricTrack)) continue
       entry.pivot.getWorldPosition(_worldPos)

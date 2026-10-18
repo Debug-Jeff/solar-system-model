@@ -317,3 +317,33 @@ test('a craft out of coverage hides its model, and other placeholders stay visib
   expect(visible).toBe(false)
   bodies.dispose()
 })
+
+import { orbitFade } from './bodies'
+
+test('a body\'s own orbit fades out as the body fills the screen', () => {
+  expect(orbitFade(2)).toBe(1)
+  expect(orbitFade(4)).toBe(1)
+  expect(orbitFade(17)).toBeGreaterThan(0)
+  expect(orbitFade(17)).toBeLessThan(1)
+  expect(orbitFade(30)).toBe(0)
+  expect(orbitFade(500)).toBe(0)
+})
+
+test('zooming right up to Earth hides its orbit line; from afar it shows', () => {
+  const t = Date.parse('2026-10-18T12:00:00Z')
+  const bodies = createBodies(new THREE.Scene(), data, textures, t)
+  bodies.updateFrame(t, 0)
+  const earth = bodies.byId.get('earth')!
+  const pos = bodies.getBodyWorldPos('earth', new THREE.Vector3())
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  const look = (distanceKm: number) => {
+    cam.position.copy(pos).add(new THREE.Vector3(0, distanceKm, 0))
+    cam.lookAt(pos)
+    cam.updateMatrixWorld()
+    bodies.updateView(cam, 800, 'earth', true)
+    return earth.orbitLine!.visible
+  }
+  expect(look(1e8)).toBe(true)
+  expect(look(3e4)).toBe(false)
+  bodies.dispose()
+})
