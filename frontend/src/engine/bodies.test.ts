@@ -124,7 +124,8 @@ test('a Sun-orbiting spacecraft trail shows with Orbits on and uses the native s
   cam.updateMatrixWorld()
   bodies.updateView(cam, 800, null, true)
   const parker = bodies.byId.get('parker')!
-  expect(parker.orbitLine!.visible).toBe(true)
+  expect(parker.orbitLine!.visible).toBe(false)
+  expect(parker.trail!.line.visible).toBe(true)
   expect(parker.orbitPoints.length).toBe(parkerTrack.count)
   bodies.dispose()
 })
@@ -214,7 +215,7 @@ test('satellite orbits only show once the Earth system is big on screen', () => 
     cam.lookAt(earth)
     cam.updateMatrixWorld()
     bodies.updateView(cam, 800, null, true)
-    return bodies.byId.get('iss')!.orbitLine!.visible
+    return bodies.byId.get('iss')!.trail!.line.visible
   }
   expect(look(5e7)).toBe(false)
   expect(look(3e4)).toBe(true)
@@ -345,5 +346,13 @@ test('zooming right up to Earth hides its orbit line; from afar it shows', () =>
   }
   expect(look(1e8)).toBe(true)
   expect(look(3e4)).toBe(false)
+  bodies.dispose()
+})
+
+test('trails go to satellites, spacecraft, asteroids and comets; planets keep full orbits', () => {
+  const t = Date.parse('2026-10-18T12:00:00Z')
+  const bodies = createBodies(new THREE.Scene(), craftData, textures, t)
+  expect(bodies.byId.get('parker')!.trail).not.toBeNull()
+  expect(bodies.byId.get('earth')!.trail).toBeNull()
   bodies.dispose()
 })
