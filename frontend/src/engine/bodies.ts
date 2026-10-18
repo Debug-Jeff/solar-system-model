@@ -6,6 +6,8 @@ import { onSatellitesRegistered, satelliteOrbit, satelliteOrbitPath, satellitePo
 import { isOptionalBody } from './coverage'
 import type { ModelLoader } from './models'
 import { createTrail, isTrailType, trailSamples, type Trail } from './trails'
+import { comaSprite } from './glow'
+import { rockGeometry } from './rocks'
 import { earthOrientation } from './earthOrientation'
 import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
@@ -261,7 +263,7 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
   }
   switch (body.id) {
     case 'sun':
-      return new THREE.MeshBasicMaterial({ map: textures.sun })
+      return new THREE.MeshBasicMaterial({ map: textures.sun, color: new THREE.Color(1.3, 1.2, 1.05), toneMapped: false })
     case 'earth':
       return buildEarthMaterial(textures)
     case 'venus':
@@ -281,9 +283,9 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
   if (plain) return new THREE.MeshStandardMaterial({ map: plain, roughness: 1 })
   const color = new THREE.Color(body.color || '#999999')
   const params: THREE.MeshStandardMaterialParameters = { color, roughness: 1 }
-  if (body.type === 'comet') {
-    params.emissive = color
-    params.emissiveIntensity = 0.5
+  if (body.type === 'asteroid' || body.type === 'comet') {
+    params.color = new THREE.Color(body.type === 'comet' ? '#5d5650' : '#8c8070')
+    params.flatShading = true
   }
   return new THREE.MeshStandardMaterial(params)
 }
@@ -387,7 +389,9 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     pivot.add(tiltGroup)
 
     const radiusKm = body.type === 'star' ? SUN_RADIUS_KM : body.radiusKm
-    const mesh = isOptionalBody(body.type) ? buildSpacecraftMesh() : new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
+    const rocky = body.type === 'asteroid' || body.type === 'comet'
+    const mesh = isOptionalBody(body.type) ? buildSpacecraftMesh() : new THREE.Mesh(rocky ? rockGeometry(body.id) : SPHERE_GEOMETRY, buildMaterial(body, textures))
+    if (body.type === 'comet') mesh.add(comaSprite(body.color))
     mesh.scale.setScalar(radiusKm)
     mesh.userData.bodyId = body.id
     if (body.id === 'earth') {

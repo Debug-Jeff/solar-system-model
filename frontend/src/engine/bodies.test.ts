@@ -356,3 +356,18 @@ test('trails go to satellites, spacecraft, asteroids and comets; planets keep fu
   expect(bodies.byId.get('earth')!.trail).toBeNull()
   bodies.dispose()
 })
+
+test('asteroids and comets are rocks, not spheres, and comets carry a glowing coma', () => {
+  const rocky: Body[] = [
+    ...data,
+    { ...base, id: 'bennu', name: 'Bennu', type: 'asteroid', radiusKm: 0.25, distanceFromSunAU: 1.1, color: '#c9a77a' },
+    { ...base, id: 'halley', name: "Halley's Comet", type: 'comet', radiusKm: 5.5, distanceFromSunAU: 17.8, color: '#7fe0ff' },
+  ]
+  const bodies = createBodies(new THREE.Scene(), rocky, textures, inside)
+  const isSphere = (m: THREE.Mesh) => m.geometry instanceof THREE.SphereGeometry
+  expect(isSphere(bodies.byId.get('bennu')!.mesh)).toBe(false)
+  expect(isSphere(bodies.byId.get('halley')!.mesh)).toBe(false)
+  expect(isSphere(bodies.byId.get('earth')!.mesh)).toBe(true)
+  expect(bodies.byId.get('halley')!.mesh.children.some((c) => c instanceof THREE.Sprite)).toBe(true)
+  bodies.dispose()
+})
