@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { fetchApod, fetchLatestEpic, type ApodResponse, type EpicItem } from '../api/client'
 import type { NasaPanelContent } from '../state/store'
+import { Search } from './Search'
+import { ShareButton } from './ShareButton'
 import { useAppStore, type StoreProps } from './useAppStore'
 
 export interface NasaLoaders {
@@ -51,7 +53,9 @@ export function TopBar({ store, loaders = defaultLoaders }: StoreProps & { loade
   return (
     <header id="hud-top">
       <div id="title">Solar System</div>
+      <Search store={store} />
       <div id="top-actions">
+        <ShareButton store={store} />
         <button id="btn-apod" className="pill-btn" disabled={busy.apod} onClick={() => void load('apod')}>
           Picture of the Day
         </button>

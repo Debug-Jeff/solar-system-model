@@ -3,7 +3,7 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js
 import { createCameraFlight } from './flyTo'
 
 export interface FollowController {
-  start(distanceKm: number, nowMs: number): void
+  start(distanceKm: number, nowMs: number, direction?: THREE.Vector3): void
   stop(): void
   update(target: THREE.Vector3, nowMs: number): void
 }
@@ -13,12 +13,12 @@ export function createFollowController(camera: THREE.PerspectiveCamera, controls
   const lastTarget = new THREE.Vector3()
   const displacement = new THREE.Vector3()
   let active = false
-  let pendingStart: { distanceKm: number; nowMs: number } | null = null
+  let pendingStart: { distanceKm: number; nowMs: number; direction?: THREE.Vector3 } | null = null
 
   return {
-    start(distanceKm, nowMs) {
+    start(distanceKm, nowMs, direction) {
       active = true
-      pendingStart = { distanceKm, nowMs }
+      pendingStart = direction ? { distanceKm, nowMs, direction } : { distanceKm, nowMs }
     },
     stop() {
       active = false
@@ -27,7 +27,7 @@ export function createFollowController(camera: THREE.PerspectiveCamera, controls
     update(target, nowMs) {
       if (!active) return
       if (pendingStart) {
-        flight.start(pendingStart.distanceKm, pendingStart.nowMs)
+        flight.start(pendingStart.distanceKm, pendingStart.nowMs, pendingStart.direction)
         pendingStart = null
         lastTarget.copy(target)
       }
