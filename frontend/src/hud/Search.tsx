@@ -58,6 +58,8 @@ export function Search({ store }: StoreProps) {
         role="combobox"
         aria-expanded={shown.length > 0}
         aria-controls="search-results"
+        aria-autocomplete="list"
+        aria-activedescendant={shown[active] ? `search-option-${active}` : undefined}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)
@@ -68,10 +70,11 @@ export function Search({ store }: StoreProps) {
         onBlur={() => setOpen(false)}
       />
       {shown.length > 0 && (
-        <ul id="search-results" role="listbox">
+        <ul id="search-results" role="listbox" aria-label="Search results">
           {shown.map((body, i) => (
             <li
               key={body.id}
+              id={`search-option-${i}`}
               role="option"
               aria-selected={i === active}
               onMouseDown={(e) => {

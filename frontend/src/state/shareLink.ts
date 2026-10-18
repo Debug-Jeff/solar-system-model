@@ -21,8 +21,10 @@ export function encodeShareLink(view: ShareView, baseUrl: string): string {
   return url.toString()
 }
 
+const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/
+
 function parseTime(raw: string | null): number | null {
-  if (!raw) return null
+  if (!raw || !ISO_UTC.test(raw)) return null
   const ms = Date.parse(raw)
   if (!Number.isFinite(ms)) return null
   return Math.min(MAX_SIM_MS, Math.max(MIN_SIM_MS, ms))
@@ -31,7 +33,7 @@ function parseTime(raw: string | null): number | null {
 function parseOffset(raw: string | null): [number, number, number] | null {
   if (!raw) return null
   const parts = raw.split(',')
-  if (parts.length !== 3) return null
+  if (parts.length !== 3 || parts.some((p) => p.trim() === '')) return null
   const v = parts.map(Number)
   if (!v.every(Number.isFinite)) return null
   const length = Math.hypot(v[0]!, v[1]!, v[2]!)

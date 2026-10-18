@@ -33,3 +33,10 @@ test('times outside the supported range are clamped', () => {
   expect(parseShareLink('?t=1850-01-01T00:00:00Z', known)?.simTimeMs).toBe(MIN_SIM_MS)
   expect(parseShareLink('?t=2300-01-01T00:00:00Z', known)?.simTimeMs).toBe(MAX_SIM_MS)
 })
+
+test('times must be strict ISO UTC, and offsets must have three real numbers', () => {
+  expect(parseShareLink('?o=iss&t=2020', new Set(['iss']))?.simTimeMs).toBeNull()
+  expect(parseShareLink('?o=iss&t=2020-01-01T00:00:00', new Set(['iss']))?.simTimeMs).toBeNull()
+  expect(parseShareLink('?o=iss&v=1,,3', new Set(['iss']))?.offsetKm).toBeNull()
+  expect(parseShareLink('?o=iss&v=1, ,3', new Set(['iss']))?.offsetKm).toBeNull()
+})

@@ -870,3 +870,11 @@ html, body {
   border: none;
   cursor: pointer;
 }
+
+@media (max-width: 720px) {
+  #search input,
+  #search-results li,
+  .link-btn {
+    min-height: 44px;
+  }
+}

@@ -69,11 +69,11 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   const followTarget = new THREE.Vector3()
 
   function startFollowing(id: string): void {
+    const shared = viewBridge.takePending(id)
     const entry = bodies.byId.get(id)
     if (!entry) return
     controls.zoomToCursor = false
     controls.minDistance = followMinDistance(entry.radiusKm)
-    const shared = viewBridge.takePending(id)
     if (shared) {
       const direction = new THREE.Vector3(...shared)
       follow.start(direction.length(), performance.now(), direction)

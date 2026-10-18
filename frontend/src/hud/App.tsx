@@ -1,5 +1,6 @@
 import { ActiveShowers } from './ActiveShowers'
-import { CreditsLink } from './Credits'
+import { useState } from 'react'
+import { CreditsDialog } from './Credits'
 import { DateModal } from './DateModal'
 import { FollowIndicator } from './FollowIndicator'
 import { InfoPanel } from './InfoPanel'
@@ -11,6 +12,7 @@ import { TopBar } from './TopBar'
 import type { StoreProps } from './useAppStore'
 
 export function App({ store }: StoreProps) {
+  const [creditsOpen, setCreditsOpen] = useState(false)
   return (
     <>
       <LoadingOverlay store={store} />
@@ -21,11 +23,14 @@ export function App({ store }: StoreProps) {
         <ActiveShowers store={store} />
         <TimeBar store={store} />
         <LayersPanel store={store}>
-          <CreditsLink />
+          <button className="link-btn" onClick={() => setCreditsOpen(true)}>
+            Credits
+          </button>
         </LayersPanel>
       </footer>
       <FollowIndicator store={store} />
       <DateModal store={store} />
+      <CreditsDialog open={creditsOpen} onClose={() => setCreditsOpen(false)} />
     </>
   )
 }

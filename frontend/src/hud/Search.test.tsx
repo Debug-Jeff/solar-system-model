@@ -39,3 +39,12 @@ test('"/" focuses the search box unless you are typing elsewhere', () => {
   fireEvent.keyDown(document.body, { key: '/' })
   expect(document.activeElement).toBe(input)
 })
+
+test('the highlighted result is announced through aria-activedescendant', () => {
+  const { input } = setup()
+  fireEvent.change(input, { target: { value: 'mar' } })
+  fireEvent.keyDown(input, { key: 'ArrowDown' })
+  const id = input.getAttribute('aria-activedescendant')!
+  expect(document.getElementById(id)?.textContent).toMatch(/Mars Reconnaissance Orbiter/)
+  expect(input.getAttribute('aria-autocomplete')).toBe('list')
+})
