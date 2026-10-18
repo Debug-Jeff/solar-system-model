@@ -24,6 +24,7 @@ import { createKeplerBelt } from './belts'
 import { createTapDetector } from './tap'
 import { createModelLoader, gltfLoad } from './models'
 import { viewBridge } from './viewBridge'
+import { zoomCamera } from './zoom'
 import { browserQualityEnv, detectQuality, QUALITY } from './quality'
 import { createTextures, loadLiveEarthTexture } from './textures'
 
@@ -150,6 +151,10 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       else stopFollowing()
     }
     if (!prev || state.layers.labels !== prev.layers.labels) markers.setEnabled(state.layers.labels)
+    if (prev && state.zoom.seq !== prev.zoom.seq) {
+      zoomCamera(camera.position, controls.target, state.zoom.factor, controls.minDistance, controls.maxDistance)
+      controls.update()
+    }
     if (prev && state.layers.constellations !== prev.layers.constellations) sky?.setConstellations(state.layers.constellations)
     if (prev && state.layers.meteorShowers !== prev.layers.meteorShowers) streams?.setVisible(state.layers.meteorShowers)
     if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
