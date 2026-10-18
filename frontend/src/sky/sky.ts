@@ -5,7 +5,7 @@ const COS_EPS = Math.cos(23.4392911 * DEG)
 const SIN_EPS = Math.sin(23.4392911 * DEG)
 const MAX_STARS = 10_000
 const ABBR_RE = /^[A-Z][A-Za-z]{2}$/
-const WHITE_MIX = 0.4
+const WHITE_MIX = 0.25
 
 export interface SkyData {
   stars: Float32Array
@@ -58,7 +58,7 @@ export function bvToRgb(bv: number): [number, number, number] {
 }
 
 export function starSizePx(vmag: number): number {
-  return Math.min(4, Math.max(0.8, 2.6 * Math.pow(10, -0.2 * (vmag - 1))))
+  return Math.min(9, Math.max(1.5, 5 * Math.pow(10, -0.2 * (vmag - 1))))
 }
 
 export function starAlpha(vmag: number): number {

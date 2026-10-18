@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { expect, test } from 'vitest'
-import { CAMERA_FAR_KM, CAMERA_NEAR_KM, MAX_DISTANCE_KM, STARFIELD_RADIUS_KM } from './scene'
+import { CAMERA_FAR_KM, CAMERA_NEAR_KM, MAX_DISTANCE_KM } from './scene'
+import { SKY_RADIUS_KM } from './sky'
 
 test('unprojecting the far plane (zoom-to-cursor) stays finite', () => {
   const camera = new THREE.PerspectiveCamera(45, 16 / 9, CAMERA_NEAR_KM, CAMERA_FAR_KM)
@@ -12,6 +13,6 @@ test('unprojecting the far plane (zoom-to-cursor) stays finite', () => {
   expect(v.toArray().every(Number.isFinite)).toBe(true)
 })
 
-test('the starfield and the farthest zoom fit inside the far plane', () => {
-  expect(STARFIELD_RADIUS_KM + MAX_DISTANCE_KM).toBeLessThan(CAMERA_FAR_KM)
+test('the star sphere and the farthest zoom fit inside the far plane', () => {
+  expect(SKY_RADIUS_KM + MAX_DISTANCE_KM).toBeLessThan(CAMERA_FAR_KM)
 })

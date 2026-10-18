@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 
 export interface Textures {
-  stars: THREE.Texture
   sun: THREE.Texture
   mercury: THREE.Texture
   venus: { surface: THREE.Texture; atmosphere: THREE.Texture }
@@ -40,7 +39,6 @@ export function createTextures({ onProgress, onDone }: TextureLoadingCallbacks):
   const data = (path: string) => loader.load(path)
 
   return {
-    stars: color('/textures/stars/stars.jpg'),
     sun: color('/textures/sun/sun.jpg'),
     mercury: color('/textures/mercury/mercury.jpg'),
     venus: {

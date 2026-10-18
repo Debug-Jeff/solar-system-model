@@ -8,6 +8,8 @@ import { flyToDistance, followMinDistance } from './flyTo'
 import { createFollowController } from './follow'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
+import { loadSky } from '../sky/sky'
+import { createSky, type Sky } from './sky'
 import { coverageActions, isOptionalBody } from './coverage'
 import { loadSatellites } from '../satellites/loader'
 import { registerSatellites } from '../satellites/store'
@@ -44,8 +46,8 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     onProgress: (loaded, total) => store.getState().setLoading({ text: `Loading textures… ${loaded}/${total}` }),
     onDone: () => store.getState().setLoading({ active: false }),
   })
-  const parts = createScene(canvas, textures)
-  const { scene, camera, renderer, controls, starfield } = parts
+  const parts = createScene(canvas)
+  const { scene, camera, renderer, controls } = parts
 
   const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs)
   const markers = createMarkerLayer(labelsLayer, (id) => store.getState().select(id))
@@ -82,6 +84,12 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   }
 
   requestSet('spacecraft')
+  let sky: Sky | null = null
+  void loadSky().then((data) => {
+    if (!data || disposed) return
+    sky = createSky(scene, data)
+    sky.setConstellations(store.getState().layers.constellations)
+  })
   void loadSatellites({ onUpdate: registerSatellites }).then((file) => {
     if (file && !disposed) registerSatellites(file)
   })
@@ -117,6 +125,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       else stopFollowing()
     }
     if (!prev || state.layers.labels !== prev.layers.labels) markers.setEnabled(state.layers.labels)
+    if (prev && state.layers.constellations !== prev.layers.constellations) sky?.setConstellations(state.layers.constellations)
     if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
       liveTexture.set(state.layers.liveEarthTexture)
     }
@@ -187,7 +196,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     controls.update()
     keepOutsideBodies(state.followId)
     camera.updateMatrixWorld()
-    starfield.position.copy(camera.position)
+    sky?.update(camera)
 
     const height = renderer.domElement.clientHeight
     bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
@@ -219,6 +228,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       markers.dispose()
       belts.forEach((belt) => belt.dispose())
       bodies.dispose()
+      sky?.dispose()
       parts.dispose()
     },
   }

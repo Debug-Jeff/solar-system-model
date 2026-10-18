@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { AU_KM } from './frames'
-import type { Textures } from './textures'
 
 const HOME_DISTANCE_KM = 7 * AU_KM
 const HOME_ELEVATION_RAD = (35 * Math.PI) / 180
@@ -12,7 +11,6 @@ export const INITIAL_CAMERA_POSITION = new THREE.Vector3(
 )
 export const DEFAULT_MIN_DISTANCE_KM = 1
 export const MAX_DISTANCE_KM = 200 * AU_KM
-export const STARFIELD_RADIUS_KM = 5e10
 export const CAMERA_NEAR_KM = 1e-3
 export const CAMERA_FAR_KM = 1e11
 const SUN_GLOW_SCALE = 0.08
@@ -22,7 +20,6 @@ export interface SceneParts {
   camera: THREE.PerspectiveCamera
   renderer: THREE.WebGLRenderer
   controls: OrbitControls
-  starfield: THREE.Mesh
   dispose(): void
 }
 
@@ -46,7 +43,7 @@ function glowTexture(): THREE.Texture {
   return tex
 }
 
-export function createScene(canvas: HTMLCanvasElement, textures: Textures): SceneParts {
+export function createScene(canvas: HTMLCanvasElement): SceneParts {
   const scene = new THREE.Scene()
 
   const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, CAMERA_NEAR_KM, CAMERA_FAR_KM)
@@ -69,13 +66,6 @@ export function createScene(canvas: HTMLCanvasElement, textures: Textures): Scen
 
   scene.add(new THREE.PointLight(0xffffff, 3.2, 0, 0))
   scene.add(new THREE.AmbientLight(0x394463, 0.35))
-
-  const starfield = new THREE.Mesh(
-    new THREE.SphereGeometry(STARFIELD_RADIUS_KM, 64, 64),
-    new THREE.MeshBasicMaterial({ map: textures.stars, side: THREE.BackSide, depthWrite: false })
-  )
-  starfield.renderOrder = -1
-  scene.add(starfield)
 
   const glow = new THREE.Sprite(
     new THREE.SpriteMaterial({
@@ -101,7 +91,6 @@ export function createScene(canvas: HTMLCanvasElement, textures: Textures): Scen
     camera,
     renderer,
     controls,
-    starfield,
     dispose() {
       window.removeEventListener('resize', onResize)
       controls.dispose()

@@ -44,7 +44,7 @@ test('star colours run from blue-white through warm white to orange-red', () => 
   expect(r2).toBeGreaterThanOrEqual(g2)
   expect(g2).toBeGreaterThanOrEqual(b2)
   const [r3, , b3] = bvToRgb(1.85)
-  expect(r3).toBeGreaterThan(1.3 * b3)
+  expect(r3).toBeGreaterThan(1.5 * b3)
   for (const bv of [-0.4, 0, 0.6, 1.2, 2.5]) for (const c of bvToRgb(bv)) expect(c >= 0 && c <= 1).toBe(true)
 })
 
@@ -54,8 +54,8 @@ test('brighter stars are bigger and more opaque, within clamps', () => {
     expect(starSizePx(mags[i]!)).toBeLessThanOrEqual(starSizePx(mags[i - 1]!))
     expect(starAlpha(mags[i]!)).toBeLessThanOrEqual(starAlpha(mags[i - 1]!))
   }
-  expect(starSizePx(-1.46)).toBe(4)
-  expect(starSizePx(6.5)).toBe(0.8)
+  expect(starSizePx(-1.46)).toBe(9)
+  expect(starSizePx(6.5)).toBe(1.5)
   expect(starAlpha(-1.46)).toBe(1)
   expect(starAlpha(6.5)).toBe(0.12)
 })

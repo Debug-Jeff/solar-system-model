@@ -19,7 +19,7 @@ export interface AppState {
   selectedId: string | null
   followId: string | null
   followSeq: number
-  layers: { orbits: boolean; labels: boolean; liveEarthTexture: boolean }
+  layers: { orbits: boolean; labels: boolean; liveEarthTexture: boolean; constellations: boolean }
   nasaPanel: NasaPanelContent | null
   dateModalOpen: boolean
   loading: { active: boolean; text: string; error: string | null }
@@ -83,7 +83,7 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     selectedId: null,
     followId: null,
     followSeq: 0,
-    layers: { orbits: true, labels: true, liveEarthTexture: false },
+    layers: { orbits: true, labels: true, liveEarthTexture: false, constellations: false },
     nasaPanel: null,
     dateModalOpen: false,
     loading: { active: true, text: 'Loading textures…', error: null },
