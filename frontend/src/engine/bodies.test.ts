@@ -10,7 +10,7 @@ import type { Textures } from './textures'
 
 const tex = () => new THREE.Texture()
 const textures: Textures = {
-  milkyWay: tex(), sun: tex(), mercury: tex(), venus: { clouds: tex() },
+  sun: tex(), mercury: tex(), venus: { clouds: tex() },
   earth: { day: tex(), night: tex(), clouds: tex(), specular: tex() },
   moon: { map: tex(), bump: tex() }, mars: tex(), jupiter: tex(),
   saturn: { map: tex(), ring: tex() }, uranus: { map: tex(), ring: tex() }, neptune: tex(),

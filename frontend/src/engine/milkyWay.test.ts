@@ -35,3 +35,15 @@ test('the background sits behind the stars, follows the camera and draws first',
   sky.dispose()
   expect(scene.children).not.toContain(sky.mesh)
 })
+
+test('the sky stays hidden until a texture arrives, then swaps in sharper ones', () => {
+  const sky = createMilkyWay(new THREE.Scene())
+  const material = sky.mesh.material as THREE.MeshBasicMaterial
+  expect(material.visible).toBe(false)
+  const low = new THREE.Texture()
+  sky.setTexture(low)
+  expect(material.visible).toBe(true)
+  const high = new THREE.Texture()
+  sky.setTexture(high)
+  expect(material.map).toBe(high)
+})

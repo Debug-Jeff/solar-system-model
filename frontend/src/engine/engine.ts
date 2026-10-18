@@ -10,6 +10,7 @@ import { loadShowers } from '../meteors/showers'
 import { createMeteorStreams, type MeteorStreams } from './meteorStreams'
 import { loadSky } from '../sky/sky'
 import { createMilkyWay } from './milkyWay'
+import { clearSelectionOnPress } from './selection'
 import { createSky, type Sky } from './sky'
 import { coverageActions, isOptionalBody } from './coverage'
 import { loadSatellites } from '../satellites/loader'
@@ -24,7 +25,7 @@ import { createModelLoader, gltfLoad } from './models'
 import { viewBridge } from './viewBridge'
 import { zoomCamera } from './zoom'
 import { browserQualityEnv, detectQuality, QUALITY } from './quality'
-import { createTextures } from './textures'
+import { createTextures, loadProgressive } from './textures'
 
 
 const SECONDS_PER_HOUR = 3600
@@ -100,7 +101,11 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
 
   requestSet('spacecraft')
   let sky: Sky | null = null
-  const milkyWay = createMilkyWay(scene, textures.milkyWay)
+  const stopClearingSelection = clearSelectionOnPress(canvas)
+  const milkyWay = createMilkyWay(scene)
+  loadProgressive('milkyWay', quality.texture, (tex) => {
+    if (!disposed) milkyWay.setTexture(tex)
+  })
   let streams: MeteorStreams | null = null
   void loadShowers().then((showers) => {
     if (!showers || disposed) return
@@ -245,6 +250,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       bodies.dispose()
       sky?.dispose()
       milkyWay.dispose()
+      stopClearingSelection()
       streams?.dispose()
       parts.dispose()
     },

@@ -16,11 +16,12 @@ export function milkyWayBasis(): THREE.Matrix4 {
 
 export interface MilkyWay {
   mesh: THREE.Mesh
+  setTexture(texture: THREE.Texture): void
   update(camera: THREE.Camera): void
   dispose(): void
 }
 
-export function createMilkyWay(scene: THREE.Scene, texture: THREE.Texture): MilkyWay {
+export function createMilkyWay(scene: THREE.Scene, texture: THREE.Texture | null = null): MilkyWay {
   const geometry = new THREE.SphereGeometry(1, 96, 48)
   const material = new THREE.MeshBasicMaterial({
     map: texture,
@@ -29,6 +30,7 @@ export function createMilkyWay(scene: THREE.Scene, texture: THREE.Texture): Milk
     depthWrite: false,
     toneMapped: false,
   })
+  material.visible = texture !== null
   const mesh = new THREE.Mesh(geometry, material)
   mesh.renderOrder = -2
   mesh.frustumCulled = false
@@ -38,6 +40,12 @@ export function createMilkyWay(scene: THREE.Scene, texture: THREE.Texture): Milk
   scene.add(mesh)
   return {
     mesh,
+    setTexture(next) {
+      material.map?.dispose()
+      material.map = next
+      material.visible = true
+      material.needsUpdate = true
+    },
     update(camera) {
       mesh.matrix.copy(placement).setPosition(camera.position)
       mesh.matrixWorldNeedsUpdate = true

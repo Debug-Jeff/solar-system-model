@@ -23,7 +23,6 @@ export interface Textures {
   saturn: { map: THREE.Texture; ring: THREE.Texture }
   uranus: { map: THREE.Texture; ring: THREE.Texture }
   neptune: THREE.Texture
-  milkyWay: THREE.Texture
 }
 
 export interface TextureLoadingCallbacks {
@@ -74,7 +73,21 @@ export function createTextures(tier: QualityTier, { onProgress, onDone }: Textur
     saturn: { map: color('saturn'), ring: color('saturnRing') },
     uranus: { map: color('uranus'), ring: color('uranusRing') },
     neptune: color('neptune'),
-    milkyWay: color('milkyWay'),
   }
 }
 
+
+export function loadProgressive(key: string, tier: QualityTier, onTexture: (tex: THREE.Texture) => void, manifest: TextureManifest = bundledManifest): void {
+  const loader = new THREE.TextureLoader()
+  const first = resolveTexture(manifest, key, 'low')
+  const best = resolveTexture(manifest, key, tier)
+  const use = (tex: THREE.Texture) => {
+    tex.colorSpace = THREE.SRGBColorSpace
+    onTexture(tex)
+  }
+  if (!first) return
+  loader.load(first, (tex) => {
+    use(tex)
+    if (best && best !== first) loader.load(best, use, undefined, () => console.warn(`Texture failed to load: ${best}`))
+  }, undefined, () => console.warn(`Texture failed to load: ${first}`))
+}

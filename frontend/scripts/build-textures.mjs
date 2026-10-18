@@ -44,15 +44,15 @@ async function download(url) {
 
 const manifest = { version: 1, textures: {} }
 
-async function emit(key, folder, name, image, sourceWidth, credit) {
+async function emit(key, folder, name, image, sourceWidth, credit, tiers = TIERS, webp = WEBP) {
   mkdirSync(join(out, folder), { recursive: true })
   const files = {}
   const written = new Map()
-  for (const [tier, target] of Object.entries(TIERS)) {
+  for (const [tier, target] of Object.entries(tiers)) {
     const width = Math.min(target, sourceWidth - (sourceWidth % 2))
     if (!written.has(width)) {
       const rel = `textures/${folder}/${name}-${width}.webp`
-      await image().resize(width, width / 2, { kernel: 'lanczos3', fit: 'fill' }).webp(WEBP).toFile(join(frontend, 'public', rel))
+      await image().resize(width, width / 2, { kernel: 'lanczos3', fit: 'fill' }).webp(webp).toFile(join(frontend, 'public', rel))
       written.set(width, rel)
     }
     files[tier] = written.get(width)
@@ -192,7 +192,7 @@ await ring('saturnRing', 'saturn', 'ring', saturnRing)
 await ring('uranusRing', 'uranus', 'ring', uranusRing)
 
 async function milkyWay() {
-  const file = await download(`${SVS}/a004800/a004851/milkyway_2020_4k.exr`)
+  const file = await download(`${SVS}/a004800/a004851/milkyway_2020_8k.exr`)
   const bytes = readFileSync(file)
   const exr = new EXRLoader().setDataType(FloatType).parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
   const { width, height, data } = exr
@@ -222,11 +222,11 @@ async function milkyWay() {
     }
   }
   console.log(`milky way: ${width}x${height}, rows ${flipped ? 'flipped' : 'as stored'}, galactic centre ${sample(266.4, -28.9, flipped).toFixed(3)} vs Hercules ${sample(266.4, 28.9, flipped).toFixed(3)}`)
-  await emit('milkyWay', 'sky', 'milkyway', () => sharp(pixels, { raw: { width, height, channels: 3 } }), width, 'NASA/Goddard Space Flight Center Scientific Visualization Studio, Deep Star Maps 2020 (Milky Way); Gaia DR2: ESA/Gaia/DPAC')
+  await emit('milkyWay', 'sky', 'milkyway', () => sharp(pixels, { raw: { width, height, channels: 3 } }), width, 'NASA/Goddard Space Flight Center Scientific Visualization Studio, Deep Star Maps 2020 (Milky Way); Gaia DR2: ESA/Gaia/DPAC', { low: 2048, medium: 4096, high: 8192 }, { quality: 70, effort: 6 })
 }
 await milkyWay()
 
-const BUDGET_MB = { low: 2, medium: 6, high: 18 }
+const BUDGET_MB = { low: 3, medium: 8, high: 24 }
 for (const [tier, limit] of Object.entries(BUDGET_MB)) {
   const unique = new Set(Object.values(manifest.textures).map((t) => t[tier]))
   const mb = [...unique].reduce((s, rel) => s + statSync(join(frontend, 'public', rel)).size, 0) / 1e6
