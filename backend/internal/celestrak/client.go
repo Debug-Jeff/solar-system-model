@@ -129,7 +129,7 @@ func validate(o OMM, now time.Time) error {
 	if err != nil {
 		return errors.New("unparseable epoch")
 	}
-	if epoch.Before(now.AddDate(0, 0, -30)) || epoch.After(now.AddDate(0, 0, 1)) {
+	if epoch.Before(now.AddDate(0, 0, -30)) || epoch.After(now.AddDate(0, 0, 3)) {
 		return errors.New("epoch out of range")
 	}
 	switch {
