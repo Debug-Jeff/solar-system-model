@@ -160,7 +160,6 @@ function track(entry: SatelliteEntry): Tracked | null {
 export function registerSatellites(file: SatellitesFile): void {
   if (file.generatedAtMs <= currentGeneratedAtMs) return
   currentGeneratedAtMs = file.generatedAtMs
-  tracked.clear()
   for (const entry of file.satellites) {
     const t = track(entry)
     if (t) tracked.set(entry.id, t)

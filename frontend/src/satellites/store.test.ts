@@ -66,12 +66,13 @@ test('the parser drops bad entries and keeps the rest', () => {
   expect(warn).toHaveBeenCalledOnce()
 })
 
-test.each(Object.entries(reference))('%s is within 1% of its JPL Horizons position', (id, points) => {
-  for (const ref of points) {
+const LIMITS_KM: Record<string, [number, number]> = { iss: [10, 25], hubble: [5, 5], chandra: [20, 100] }
+
+test.each(Object.entries(reference))('%s matches JPL Horizons tightly enough to catch a frame error', (id, points) => {
+  points.forEach((ref, k) => {
     const p = satellitePosition(id, jdToMs(ref.jd))!
-    const err = Math.hypot(p.x - ref.x, p.y - ref.y, p.z - ref.z)
-    expect(err / Math.hypot(ref.x, ref.y, ref.z)).toBeLessThan(0.01)
-  }
+    expect(Math.hypot(p.x - ref.x, p.y - ref.y, p.z - ref.z)).toBeLessThan(LIMITS_KM[id]![k]!)
+  })
 })
 
 test('the ISS ground point matches satellite.js in its own TEME frame', () => {
@@ -121,7 +122,7 @@ test('orbit, path and velocity look like the ISS', () => {
   expect(Math.hypot(v.x, v.y, v.z)).toBeCloseTo(7.66, 1)
 })
 
-test('a newer file replaces an older one, never the reverse, and listeners hear about it', () => {
+test('a newer file updates satellites it carries and keeps the rest; an older file is ignored', () => {
   const heard = vi.fn()
   const off = onSatellitesRegistered(heard)
   const older: SatellitesFile = { ...frozen, generatedAtMs: frozen.generatedAtMs - DAY, satellites: frozen.satellites.filter((s) => s.id === 'iss') }
@@ -130,7 +131,7 @@ test('a newer file replaces an older one, never the reverse, and listeners hear 
   expect(heard).not.toHaveBeenCalled()
   const newer: SatellitesFile = { ...older, generatedAtMs: frozen.generatedAtMs + DAY }
   registerSatellites(newer)
-  expect(satelliteOrbit('hubble')).toBeNull()
+  expect(satelliteOrbit('hubble')).not.toBeNull()
   expect(heard).toHaveBeenCalledOnce()
   off()
 })

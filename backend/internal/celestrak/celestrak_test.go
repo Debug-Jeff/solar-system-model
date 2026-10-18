@@ -117,7 +117,7 @@ func TestBuildDropsInvalidElements(t *testing.T) {
 	cases := map[string]func(*OMM){
 		"unparseable epoch":   func(o *OMM) { o.Epoch = "yesterday" },
 		"epoch too old":       func(o *OMM) { o.Epoch = "2026-09-10T00:00:00.000000" },
-		"epoch in the future": func(o *OMM) { o.Epoch = "2026-10-19T00:00:00.000000" },
+		"epoch in the future": func(o *OMM) { o.Epoch = "2026-10-21T00:00:00.000000" },
 		"eccentricity 1":      func(o *OMM) { o.Eccentricity = 1 },
 		"negative ecc":        func(o *OMM) { o.Eccentricity = -0.1 },
 		"zero mean motion":    func(o *OMM) { o.MeanMotion = 0 },
@@ -144,6 +144,18 @@ func TestBuildDropsInvalidElements(t *testing.T) {
 				t.Fatalf("ids %v", ids(file))
 			}
 		})
+	}
+}
+
+func TestBuildAcceptsElementsDatedUpToThreeDaysAhead(t *testing.T) {
+	src := fullSource()
+	src.groups["science"][1].Epoch = "2026-10-19T12:00:00.000000"
+	file, err := Build(context.Background(), src, testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Satellites) != len(Registry) {
+		t.Fatalf("an epoch 2.25 days ahead was rejected: %v", ids(file))
 	}
 }
 
