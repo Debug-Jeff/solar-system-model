@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NodeIO } from '@gltf-transform/core'
@@ -11,10 +11,11 @@ import sharp from 'sharp'
 const frontend = join(dirname(fileURLToPath(import.meta.url)), '..')
 const cache = process.env.MODEL_CACHE ?? join(frontend, '..', '.texture-cache', 'models')
 const out = join(frontend, 'public', 'models')
-const BASE = 'https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/'
+const staging = join(frontend, 'public', 'models.staging')
+const BASE = 'https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Models/'
 const MAX_FILE_MB = 1.5
 const MAX_TOTAL_MB = 12
-const CREDIT = 'NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)'
+const CREDIT = 'NASA 3D Resources (described by NASA as free and without copyright; used under NASA media usage guidelines; no endorsement implied)'
 
 const MODELS = {
   parker: 'Parker Solar Probe/Parker Solar Probe.glb',
@@ -56,8 +57,8 @@ await MeshoptSimplifier.ready
 const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'draco3d.decoder': await draco3d.createDecoderModule() })
-rmSync(out, { recursive: true, force: true })
-mkdirSync(out, { recursive: true })
+rmSync(staging, { recursive: true, force: true })
+mkdirSync(staging, { recursive: true })
 
 const manifest = { version: 1, models: {} }
 const built = new Map()
@@ -66,36 +67,43 @@ for (const [id, path] of Object.entries(MODELS)) {
   if (!built.has(path)) {
     const name = path.split('/')[0].replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase()
     const rel = `models/${name}.glb`
+    const target = join(staging, `${name}.glb`)
+    const source = await download(path)
     const compress = async (textureSize, ratio) => {
-      const doc = await io.read(await download(path))
+      const doc = await io.read(source)
       for (const ext of doc.getRoot().listExtensionsUsed()) if (ext.extensionName === 'KHR_draco_mesh_compression') ext.dispose()
       const steps = [dedup(), prune(), weld()]
       if (ratio < 1) steps.push(simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.002 }))
       steps.push(textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [textureSize, textureSize] }), meshopt({ encoder: MeshoptEncoder, level: 'medium' }))
       await doc.transform(...steps)
-      await io.write(join(frontend, 'public', rel), doc)
-      return statSync(join(frontend, 'public', rel)).size
+      await io.write(target, doc)
+      return statSync(target).size
     }
     let bytes = 0
     try {
       bytes = await compress(1024, 1)
-      if (bytes / 1e6 > MAX_FILE_MB) bytes = await compress(512, 0.5)
+      if (bytes / 1e6 > MAX_FILE_MB) {
+        console.warn(`${path}: over ${MAX_FILE_MB} MB, retrying with 512 px textures and 50% simplification`)
+        bytes = await compress(512, 0.5)
+      }
     } catch (err) {
-      console.warn(`${path}: skipped (${err.message.split('\n')[0]})`)
+      console.warn(`${path}: skipped, the source model is unusable (${err.message.split('\n')[0]})`)
       bytes = Number.POSITIVE_INFINITY
     }
     if (bytes / 1e6 > MAX_FILE_MB) {
-      rmSync(join(frontend, 'public', rel), { force: true })
+      rmSync(target, { force: true })
       built.set(path, null)
       if (Number.isFinite(bytes)) console.warn(`${path}: skipped, ${(bytes / 1e6).toFixed(2)} MB is over ${MAX_FILE_MB} MB`)
     } else {
       totalBytes += bytes
       built.set(path, rel)
-      console.log(`${rel}: ${(statSync(await download(path)).size / 1e6).toFixed(2)} → ${(bytes / 1e6).toFixed(2)} MB`)
+      console.log(`${rel}: ${(statSync(source).size / 1e6).toFixed(2)} → ${(bytes / 1e6).toFixed(2)} MB`)
     }
   }
   if (built.get(path)) manifest.models[id] = { file: built.get(path), source: `NASA-3D-Resources/3D Models/${path}`, credit: CREDIT }
 }
 if (totalBytes / 1e6 > MAX_TOTAL_MB) throw new Error(`models total ${(totalBytes / 1e6).toFixed(2)} MB, over ${MAX_TOTAL_MB} MB`)
-writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+writeFileSync(join(staging, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+rmSync(out, { recursive: true, force: true })
+renameSync(staging, out)
 console.log(`total ${(totalBytes / 1e6).toFixed(2)} MB for ${built.size} files, ${Object.keys(manifest.models).length} craft`)

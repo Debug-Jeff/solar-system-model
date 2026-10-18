@@ -20,7 +20,7 @@
 
 ## 3D models
 
-Spacecraft and satellite models come from [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources), which are free and without copyright. They're used under [NASA's media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media), and no endorsement by NASA is implied. Each model is compressed by `frontend/scripts/build-models.mjs`, and its source path is listed in `frontend/public/models/manifest.json`.
+Spacecraft and satellite models come from [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources), which NASA describes as free and without copyright. They're used under [NASA's media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media), and no endorsement by NASA is implied. Each model is compressed by `frontend/scripts/build-models.mjs`, and its source path is listed in `frontend/public/models/manifest.json`.
 
 ## Textures
 

@@ -53,8 +53,9 @@ test('retargeting mid-flight continues from the current pose', () => {
   expect(camera.position.distanceTo(before)).toBeLessThan(1e-6)
 })
 
-test('followMinDistance lets the camera reach small craft but never inside a planet', () => {
-  expect(followMinDistance(0.01)).toBeCloseTo(0.015, 12)
+test('followMinDistance lets the camera reach small craft but never inside a planet or a model', () => {
+  expect(followMinDistance(0.01)).toBeCloseTo(0.02, 12)
+  expect(followMinDistance(0.0015)).toBeGreaterThan(0.0015 * Math.sqrt(3))
   expect(followMinDistance(0.0001)).toBe(0.002)
   expect(followMinDistance(6371)).toBe(1)
 })

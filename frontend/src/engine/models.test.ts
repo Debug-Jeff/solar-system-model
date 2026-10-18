@@ -38,3 +38,11 @@ test('a failed load warns once and resolves null without retrying', async () => 
   expect(load).toHaveBeenCalledTimes(1)
   expect(warn).toHaveBeenCalledTimes(1)
 })
+
+test('a model that cannot be normalised resolves null instead of rejecting', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  const broken = { clone: () => { throw new Error('bad node') } } as unknown as THREE.Object3D
+  const models = createModelLoader(async () => broken, manifest)
+  await expect(models.request('iss', 0.1)).resolves.toBeNull()
+  expect(warn).toHaveBeenCalledOnce()
+})

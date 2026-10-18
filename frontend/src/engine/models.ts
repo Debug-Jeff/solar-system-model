@@ -45,7 +45,12 @@ export function createModelLoader(load: LoadModel, manifest: ModelManifest = bun
       if (!entry) return Promise.resolve(null)
       let pending = craft.get(id)
       if (!pending) {
-        pending = loadFile(entry.file).then((source) => (source ? normalizeModel(source.clone(true), sizeKm) : null))
+        pending = loadFile(entry.file)
+          .then((source) => (source ? normalizeModel(source.clone(true), sizeKm) : null))
+          .catch((err: unknown) => {
+            console.warn(`3D model could not be prepared: ${id}`, err)
+            return null
+          })
         craft.set(id, pending)
       }
       return pending

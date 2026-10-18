@@ -295,3 +295,25 @@ test('a craft swaps in its model when the camera comes close, and stays pickable
   expect(bodies.raycastTargets).toContain(iss.mesh)
   bodies.dispose()
 })
+
+test('a craft out of coverage hides its model, and other placeholders stay visible', async () => {
+  resetSatellites()
+  registerSatellites(satFile)
+  const t = issEpochMs + 3_600_000
+  const models = createModelLoader(async () => new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1), new THREE.MeshStandardMaterial()), { version: 1, models: { iss: { file: 'models/iss.glb', credit: 'NASA 3D Resources' } } })
+  const bodies = createBodies(new THREE.Scene(), [...data, satBody('iss'), satBody('hubble')], textures, t, models)
+  bodies.updateFrame(t, 0)
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  cam.position.copy(bodies.getBodyWorldPos('iss', new THREE.Vector3())).add(new THREE.Vector3(0, 0, 2))
+  cam.updateMatrixWorld()
+  bodies.updateView(cam, 800, null, true)
+  await new Promise((r) => setTimeout(r, 0))
+  const iss = bodies.byId.get('iss')!
+  expect(iss.model).not.toBeNull()
+  expect((bodies.byId.get('hubble')!.mesh.material as THREE.Material).visible).toBe(true)
+  bodies.updateFrame(issEpochMs + 30 * 86_400_000, 0)
+  let visible = true
+  iss.model!.traverseAncestors((a) => { if (!a.visible) visible = false })
+  expect(visible).toBe(false)
+  bodies.dispose()
+})

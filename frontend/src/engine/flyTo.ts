@@ -11,7 +11,7 @@ export function easeInOutCubic(t: number): number {
 }
 
 export function followMinDistance(radiusKm: number): number {
-  return Math.min(1, Math.max(0.002, radiusKm * 1.5))
+  return Math.min(1, Math.max(0.002, radiusKm * 2))
 }
 
 export function flyToDistance(radiusKm: number): number {
