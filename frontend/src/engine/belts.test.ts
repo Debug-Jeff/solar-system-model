@@ -37,3 +37,14 @@ test('createKeplerBelt builds one point per row and updates its time uniform', (
   belt.dispose()
   expect(scene.children).not.toContain(belt.points)
 })
+
+test('a belt keeps 0.8 opacity by default and can be restyled without rebuilding', () => {
+  const belt = createKeplerBelt(new THREE.Scene(), { count: 1, rows: Float64Array.from([2.7, 0.1, 10, 80, 73, 0, 0.21, 2461200.5]) }, 0xffffff, 2)
+  const uniforms = (belt.points.material as THREE.ShaderMaterial).uniforms
+  expect(uniforms.uOpacity!.value).toBe(0.8)
+  const geometry = belt.points.geometry
+  belt.setStyle(3, 0.4)
+  expect(uniforms.uOpacity!.value).toBe(0.4)
+  expect(uniforms.uSize!.value).toBeGreaterThanOrEqual(3)
+  expect(belt.points.geometry).toBe(geometry)
+})

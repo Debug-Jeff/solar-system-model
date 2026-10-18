@@ -1,3 +1,4 @@
+import { ActiveShowers } from './ActiveShowers'
 import { DateModal } from './DateModal'
 import { FollowIndicator } from './FollowIndicator'
 import { InfoPanel } from './InfoPanel'
@@ -16,6 +17,7 @@ export function App({ store }: StoreProps) {
       <InfoPanel store={store} />
       <NasaPanel store={store} />
       <footer id="hud-bottom">
+        <ActiveShowers store={store} />
         <TimeBar store={store} />
         <LayerToggles store={store} />
       </footer>

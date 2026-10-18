@@ -1,3 +1,4 @@
+import type { Shower } from '../meteors/showers'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Body } from '../types/body'
 
@@ -19,7 +20,8 @@ export interface AppState {
   selectedId: string | null
   followId: string | null
   followSeq: number
-  layers: { orbits: boolean; labels: boolean; liveEarthTexture: boolean; constellations: boolean }
+  layers: { orbits: boolean; labels: boolean; liveEarthTexture: boolean; constellations: boolean; meteorShowers: boolean }
+  showers: Shower[]
   nasaPanel: NasaPanelContent | null
   dateModalOpen: boolean
   loading: { active: boolean; text: string; error: string | null }
@@ -39,6 +41,7 @@ export interface AppActions {
   select(id: string | null): void
   stopFollow(): void
   setLayer(layer: keyof AppState['layers'], on: boolean): void
+  setShowers(showers: Shower[]): void
   showNasaPanel(content: NasaPanelContent): void
   closeNasaPanel(): void
   setDateModalOpen(open: boolean): void
@@ -83,7 +86,8 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     selectedId: null,
     followId: null,
     followSeq: 0,
-    layers: { orbits: true, labels: true, liveEarthTexture: false, constellations: false },
+    layers: { orbits: true, labels: true, liveEarthTexture: false, constellations: false, meteorShowers: true },
+    showers: [],
     nasaPanel: null,
     dateModalOpen: false,
     loading: { active: true, text: 'Loading textures…', error: null },
@@ -116,6 +120,7 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
       set((s) => (id === null ? { selectedId: null } : { selectedId: id, followId: id, followSeq: s.followSeq + 1 })),
     stopFollow: () => set({ followId: null }),
     setLayer: (layer, on) => set((s) => ({ layers: { ...s.layers, [layer]: on } })),
+    setShowers: (showers) => set({ showers }),
     showNasaPanel: (content) => set({ nasaPanel: content }),
     closeNasaPanel: () => set({ nasaPanel: null }),
     setDateModalOpen: (open) => set({ dateModalOpen: open }),

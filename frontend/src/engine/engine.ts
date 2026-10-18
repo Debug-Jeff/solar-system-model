@@ -8,6 +8,8 @@ import { flyToDistance, followMinDistance } from './flyTo'
 import { createFollowController } from './follow'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
+import { loadShowers } from '../meteors/showers'
+import { createMeteorStreams, type MeteorStreams } from './meteorStreams'
 import { loadSky } from '../sky/sky'
 import { createSky, type Sky } from './sky'
 import { coverageActions, isOptionalBody } from './coverage'
@@ -85,6 +87,13 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
 
   requestSet('spacecraft')
   let sky: Sky | null = null
+  let streams: MeteorStreams | null = null
+  void loadShowers().then((showers) => {
+    if (!showers || disposed) return
+    store.getState().setShowers(showers)
+    streams = createMeteorStreams(scene, showers)
+    streams.setVisible(store.getState().layers.meteorShowers)
+  })
   void loadSky().then((data) => {
     if (!data || disposed) return
     sky = createSky(scene, data)
@@ -126,6 +135,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     }
     if (!prev || state.layers.labels !== prev.layers.labels) markers.setEnabled(state.layers.labels)
     if (prev && state.layers.constellations !== prev.layers.constellations) sky?.setConstellations(state.layers.constellations)
+    if (prev && state.layers.meteorShowers !== prev.layers.meteorShowers) streams?.setVisible(state.layers.meteorShowers)
     if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
       liveTexture.set(state.layers.liveEarthTexture)
     }
@@ -191,6 +201,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
 
     bodies.updateFrame(state.simTimeMs, deltaSimHours)
     belts.forEach((belt) => belt.update(state.simTimeMs))
+    streams?.update(state.simTimeMs)
 
     if (state.followId) follow.update(bodies.getBodyWorldPos(state.followId, followTarget), performance.now())
     controls.update()
@@ -229,6 +240,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       belts.forEach((belt) => belt.dispose())
       bodies.dispose()
       sky?.dispose()
+      streams?.dispose()
       parts.dispose()
     },
   }

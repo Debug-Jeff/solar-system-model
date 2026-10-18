@@ -65,11 +65,12 @@ const fragmentShader = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform vec3 uColor;
+uniform float uOpacity;
 void main() {
   #include <logdepthbuf_fragment>
   vec2 d = gl_PointCoord - 0.5;
   if (dot(d, d) > 0.25) discard;
-  gl_FragColor = vec4(uColor, 0.8);
+  gl_FragColor = vec4(uColor, uOpacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -78,10 +79,12 @@ void main() {
 export interface KeplerBelt {
   points: THREE.Points
   update(simTimeMs: number): void
+  setStyle(sizePx: number, opacity: number): void
   dispose(): void
 }
 
-export function createKeplerBelt(scene: THREE.Scene, belt: BeltData, color: number, sizePx: number): KeplerBelt {
+export function createKeplerBelt(scene: THREE.Scene, belt: BeltData, color: number, sizePx: number, opacity = 0.8): KeplerBelt {
+  const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 2)
   const orbitA = new Float32Array(belt.count * 4)
   const orbitB = new Float32Array(belt.count * 4)
   for (let k = 0; k < belt.count; k++) {
@@ -98,7 +101,8 @@ export function createKeplerBelt(scene: THREE.Scene, belt: BeltData, color: numb
     fragmentShader,
     uniforms: {
       uDays: { value: 0 },
-      uSize: { value: sizePx * Math.min(globalThis.devicePixelRatio || 1, 2) },
+      uSize: { value: sizePx * pixelRatio },
+      uOpacity: { value: opacity },
       uAuKm: { value: AU_KM },
       uColor: { value: new THREE.Color(color) },
     },
@@ -113,6 +117,10 @@ export function createKeplerBelt(scene: THREE.Scene, belt: BeltData, color: numb
     points,
     update(simTimeMs) {
       material.uniforms.uDays!.value = msToJd(simTimeMs) - J2000_JD
+    },
+    setStyle(size, alpha) {
+      material.uniforms.uSize!.value = size * pixelRatio
+      material.uniforms.uOpacity!.value = alpha
     },
     dispose() {
       scene.remove(points)
