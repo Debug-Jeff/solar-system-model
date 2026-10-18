@@ -36,8 +36,10 @@ export function LayersPanel({ store, children }: StoreProps & { children?: React
 
   return (
     <div id="layers" ref={root}>
-      <button className="pill-btn" aria-expanded={open} aria-controls="layers-panel" onClick={() => setOpen((o) => !o)}>
-        Layers
+      <button className="rail-btn" aria-label="Layers" aria-expanded={open} aria-controls="layers-panel" onClick={() => setOpen((o) => !o)}>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path d="M12 3 3 8l9 5 9-5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        </svg>
       </button>
       {open && (
         <div id="layers-panel" role="dialog" aria-label="Layers">

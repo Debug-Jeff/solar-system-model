@@ -26,6 +26,8 @@ export interface AppState {
   dateModalOpen: boolean
   loading: { active: boolean; text: string; error: string | null }
   resetViewSeq: number
+  zoom: { seq: number; factor: number }
+  infoCollapsed: boolean
 }
 
 export interface AppActions {
@@ -48,6 +50,9 @@ export interface AppActions {
   setDateModalOpen(open: boolean): void
   setLoading(patch: Partial<AppState['loading']>): void
   resetView(): void
+  setRate(rate: number): void
+  zoomBy(factor: number): void
+  toggleInfo(): void
 }
 
 export type AppStore = StoreApi<AppState & AppActions>
@@ -93,6 +98,8 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     dateModalOpen: false,
     loading: { active: true, text: 'Loading textures…', error: null },
     resetViewSeq: 0,
+    zoom: { seq: 0, factor: 1 },
+    infoCollapsed: false,
 
     setBodies: (bodies) => set({ bodies }),
     advance: (realSeconds) => {
@@ -127,6 +134,11 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     closeNasaPanel: () => set({ nasaPanel: null }),
     setDateModalOpen: (open) => set({ dateModalOpen: open }),
     setLoading: (patch) => set((s) => ({ loading: { ...s.loading, ...patch } })),
+    setRate: (rate) => {
+      if (RATE_STEPS.includes(Math.abs(rate))) set({ rate })
+    },
+    zoomBy: (factor) => set((s) => ({ zoom: { seq: s.zoom.seq + 1, factor } })),
+    toggleInfo: () => set((s) => ({ infoCollapsed: !s.infoCollapsed })),
     resetView: () => set((s) => ({ followId: null, resetViewSeq: s.resetViewSeq + 1 })),
   }))
 }

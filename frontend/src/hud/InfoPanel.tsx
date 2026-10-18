@@ -19,6 +19,8 @@ function formatRange(km: number): string {
 export function InfoPanel({ store }: StoreProps) {
   const body = useAppStore(store, (s) => s.bodies.find((b) => b.id === s.selectedId) ?? null)
   const select = useAppStore(store, (s) => s.select)
+  const collapsed = useAppStore(store, (s) => s.infoCollapsed)
+  const toggleInfo = useAppStore(store, (s) => s.toggleInfo)
   const position = useAppStore(store, (s) =>
     s.selectedId ? (availability(s.selectedId, s.simTimeMs) === 'exact' ? 'Accurate' : 'Approximate') : null
   )
@@ -90,7 +92,10 @@ export function InfoPanel({ store }: StoreProps) {
     : []
 
   return (
-    <aside id="info-panel" className={body ? '' : 'hidden'}>
+    <aside id="info-panel" className={body && !collapsed ? '' : 'hidden'}>
+      <button id="info-collapse" aria-label="Collapse info" onClick={toggleInfo}>
+        «
+      </button>
       <button id="info-close" aria-label="Close" onClick={() => select(null)}>
         ×
       </button>

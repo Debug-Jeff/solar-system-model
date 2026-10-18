@@ -4,7 +4,7 @@ import { CreditsDialog } from './Credits'
 import { DateModal } from './DateModal'
 import { FollowIndicator } from './FollowIndicator'
 import { InfoPanel } from './InfoPanel'
-import { LayersPanel } from './LayersPanel'
+import { RightRail } from './RightRail'
 import { LoadingOverlay } from './LoadingOverlay'
 import { NasaPanel } from './NasaPanel'
 import { TimeBar } from './TimeBar'
@@ -22,12 +22,12 @@ export function App({ store }: StoreProps) {
       <footer id="hud-bottom">
         <ActiveShowers store={store} />
         <TimeBar store={store} />
-        <LayersPanel store={store}>
-          <button className="link-btn" onClick={() => setCreditsOpen(true)}>
-            Credits
-          </button>
-        </LayersPanel>
       </footer>
+      <RightRail store={store}>
+        <button className="link-btn" onClick={() => setCreditsOpen(true)}>
+          Credits
+        </button>
+      </RightRail>
       <FollowIndicator store={store} />
       <DateModal store={store} />
       <CreditsDialog open={creditsOpen} onClose={() => setCreditsOpen(false)} />
