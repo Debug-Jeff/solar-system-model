@@ -20,6 +20,13 @@
 
 ## Textures
 
-The planet textures in `frontend/public/textures/` have no recorded source yet. They will be identified and credited, or replaced with NASA public-domain maps, on the `feat/textures-and-quality` branch.
+All planet and moon maps are public-domain NASA, JPL and USGS imagery, resized and converted to WebP by `frontend/scripts/build-textures.mjs`:
+
+- Earth: [Blue Marble Next Generation](https://visibleearth.nasa.gov/collection/1484/blue-marble), [Black Marble 2016](https://earthobservatory.nasa.gov/features/NightLights) and the global cloud map from NASA Earth Observatory / Visible Earth. The ocean glint uses the land mask from the [NASA Scientific Visualization Studio](https://svs.gsfc.nasa.gov/3487).
+- Moon: [CGI Moon Kit](https://svs.gsfc.nasa.gov/4720), NASA Scientific Visualization Studio (LRO LROC colour and LOLA elevation).
+- Mercury: MESSENGER MDIS global mosaic (NASA/JHUAPL/Carnegie Institution of Washington) via [USGS Astrogeology](https://astrogeology.usgs.gov). The enhanced-colour version is desaturated toward natural colour.
+- Mars: Viking colour mosaic (NASA) via USGS Astrogeology.
+- Jupiter: Cassini map [PIA07782](https://science.nasa.gov/resource/cassinis-best-maps-of-jupiter/) (NASA/JPL/University of Arizona).
+- The Sun, Venus's cloud deck, the cloud bands of Saturn, Uranus and Neptune, and Saturn's and Uranus's rings are generated for this project; no public-domain global maps of the giant planets' cloud tops are available. The ring textures follow the real structure: Saturn's C, B and A rings, the Cassini Division, the Encke gap and the F ring, and Uranus's narrow rings and wider epsilon ring.
 
 This project is not affiliated with or endorsed by NASA or JPL.

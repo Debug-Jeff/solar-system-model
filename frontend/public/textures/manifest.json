@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "textures": {
+    "earthDay": {
+      "low": "textures/earth/day-1024.webp",
+      "medium": "textures/earth/day-2048.webp",
+      "high": "textures/earth/day-4096.webp",
+      "credit": "NASA Earth Observatory, Blue Marble Next Generation (Dec 2004, topography and bathymetry)"
+    },
+    "earthNight": {
+      "low": "textures/earth/night-1024.webp",
+      "medium": "textures/earth/night-2048.webp",
+      "high": "textures/earth/night-4096.webp",
+      "credit": "NASA Earth Observatory, Black Marble 2016"
+    },
+    "earthClouds": {
+      "low": "textures/earth/clouds-1024.webp",
+      "medium": "textures/earth/clouds-2048.webp",
+      "high": "textures/earth/clouds-2048.webp",
+      "credit": "NASA Visible Earth, global cloud cover"
+    },
+    "earthSpecular": {
+      "low": "textures/earth/specular-1024.webp",
+      "medium": "textures/earth/specular-2048.webp",
+      "high": "textures/earth/specular-4096.webp",
+      "credit": "NASA Scientific Visualization Studio, land mask (inverted for ocean glint)"
+    },
+    "moon": {
+      "low": "textures/moon/color-1024.webp",
+      "medium": "textures/moon/color-2048.webp",
+      "high": "textures/moon/color-4096.webp",
+      "credit": "NASA Scientific Visualization Studio, CGI Moon Kit (LRO LROC colour)"
+    },
+    "moonBump": {
+      "low": "textures/moon/bump-1024.webp",
+      "medium": "textures/moon/bump-1024.webp",
+      "high": "textures/moon/bump-1024.webp",
+      "credit": "NASA Scientific Visualization Studio, CGI Moon Kit (LRO LOLA elevation)"
+    },
+    "mercury": {
+      "low": "textures/mercury/color-1024.webp",
+      "medium": "textures/mercury/color-2048.webp",
+      "high": "textures/mercury/color-4096.webp",
+      "credit": "NASA/JHUAPL/CIW MESSENGER MDIS global mosaic via USGS Astrogeology (enhanced colour, desaturated toward natural colour)"
+    },
+    "mars": {
+      "low": "textures/mars/color-1024.webp",
+      "medium": "textures/mars/color-2048.webp",
+      "high": "textures/mars/color-4096.webp",
+      "credit": "NASA Viking colour mosaic via USGS Astrogeology"
+    },
+    "jupiter": {
+      "low": "textures/jupiter/color-1024.webp",
+      "medium": "textures/jupiter/color-2048.webp",
+      "high": "textures/jupiter/color-3600.webp",
+      "credit": "NASA/JPL/University of Arizona, Cassini map of Jupiter (PIA07782)"
+    },
+    "sun": {
+      "low": "textures/sun/color-1024.webp",
+      "medium": "textures/sun/color-2048.webp",
+      "high": "textures/sun/color-2048.webp",
+      "credit": "Generated for this project (procedural)"
+    },
+    "venus": {
+      "low": "textures/venus/clouds-1024.webp",
+      "medium": "textures/venus/clouds-2048.webp",
+      "high": "textures/venus/clouds-2048.webp",
+      "credit": "Generated for this project (procedural)"
+    },
+    "saturn": {
+      "low": "textures/saturn/color-1024.webp",
+      "medium": "textures/saturn/color-2048.webp",
+      "high": "textures/saturn/color-2048.webp",
+      "credit": "Generated for this project (procedural)"
+    },
+    "uranus": {
+      "low": "textures/uranus/color-1024.webp",
+      "medium": "textures/uranus/color-2048.webp",
+      "high": "textures/uranus/color-2048.webp",
+      "credit": "Generated for this project (procedural)"
+    },
+    "neptune": {
+      "low": "textures/neptune/color-1024.webp",
+      "medium": "textures/neptune/color-2048.webp",
+      "high": "textures/neptune/color-2048.webp",
+      "credit": "Generated for this project (procedural)"
+    },
+    "saturnRing": {
+      "low": "textures/saturn/ring.png",
+      "medium": "textures/saturn/ring.png",
+      "high": "textures/saturn/ring.png",
+      "credit": "Generated for this project (procedural)"
+    },
+    "uranusRing": {
+      "low": "textures/uranus/ring.png",
+      "medium": "textures/uranus/ring.png",
+      "high": "textures/uranus/ring.png",
+      "credit": "Generated for this project (procedural)"
+    }
+  }
+}
