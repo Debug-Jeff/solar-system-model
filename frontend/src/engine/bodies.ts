@@ -160,10 +160,8 @@ function buildSpacecraftMesh(): THREE.Mesh {
 }
 
 const NIGHT_MASK = `#include <emissivemap_fragment>
-#if NUM_POINT_LIGHTS > 0
-  float nightMask = 1.0 - smoothstep(-0.25, 0.1, dot(normal, normalize(pointLights[0].position + vViewPosition)));
-  totalEmissiveRadiance *= nightMask;
-#endif`
+  float nightMask = 1.0 - smoothstep(-0.25, 0.1, dot(normal, normalize(uSunView + vViewPosition)));
+  totalEmissiveRadiance *= nightMask;`
 
 function buildEarthMaterial(textures: Textures): THREE.MeshPhongMaterial {
   const material = new THREE.MeshPhongMaterial({
@@ -175,8 +173,13 @@ function buildEarthMaterial(textures: Textures): THREE.MeshPhongMaterial {
     emissive: new THREE.Color(0xffd9a0),
     emissiveIntensity: 1.4,
   })
+  const sunView = { value: new THREE.Vector3() }
+  material.userData.sunView = sunView
   material.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', NIGHT_MASK)
+    shader.uniforms.uSunView = sunView
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uSunView;')
+      .replace('#include <emissivemap_fragment>', NIGHT_MASK)
   }
   material.customProgramCacheKey = () => 'earth-night-mask'
   return material
@@ -368,6 +371,12 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     const mesh = isOptionalBody(body.type) ? buildSpacecraftMesh() : new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
     mesh.scale.setScalar(radiusKm)
     mesh.userData.bodyId = body.id
+    if (body.id === 'earth') {
+      const sunView = (mesh.material as THREE.Material).userData.sunView as { value: THREE.Vector3 }
+      mesh.onBeforeRender = (_renderer, _scene, camera) => {
+        sunView.value.set(0, 0, 0).applyMatrix4(camera.matrixWorldInverse)
+      }
+    }
     tiltGroup.add(mesh)
     raycastTargets.push(mesh)
 

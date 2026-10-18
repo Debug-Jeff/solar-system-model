@@ -245,6 +245,9 @@ test('Earth city lights are masked to the night side by the Sun direction', () =
   const shader = { vertexShader: THREE.ShaderLib.phong.vertexShader, fragmentShader: THREE.ShaderLib.phong.fragmentShader, uniforms: {} } as unknown as THREE.WebGLProgramParametersWithUniforms
   material.onBeforeCompile(shader, {} as THREE.WebGLRenderer)
   expect(shader.fragmentShader.match(/nightMask/g)?.length).toBeGreaterThanOrEqual(2)
+  expect(shader.fragmentShader).toContain('uniform vec3 uSunView;')
+  expect(shader.fragmentShader).not.toContain('pointLights[0]')
+  expect((shader.uniforms as Record<string, unknown>).uSunView).toBeDefined()
   expect(shader.fragmentShader).toContain('1.0 - smoothstep(-0.25, 0.1,')
   expect(shader.fragmentShader.match(/#include <emissivemap_fragment>/g)).toHaveLength(1)
   expect(material.customProgramCacheKey()).toContain('night')
