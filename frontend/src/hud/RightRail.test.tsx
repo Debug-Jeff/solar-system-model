@@ -16,5 +16,4 @@ test('the rail zooms, resets the view and toggles the info panel', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Info' }))
   expect(store.getState().infoCollapsed).toBe(true)
   expect(screen.getByRole('button', { name: 'Layers' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeInTheDocument()
 })

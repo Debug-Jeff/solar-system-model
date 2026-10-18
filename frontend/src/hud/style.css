@@ -1188,3 +1188,74 @@ body {
     gap: 10px;
   }
 }
+
+.info-image {
+  margin: -20px -20px 14px;
+}
+
+.info-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 10px 10px 0 0;
+  background: #0b0c0f;
+}
+
+.info-image figcaption {
+  padding: 4px 12px 0;
+  font-size: 10px;
+  color: var(--hud-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-image figcaption a {
+  color: inherit;
+}
+
+.type-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.info-heading {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hud-text);
+}
+
+#info-facts {
+  padding-left: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c9d1dc;
+}
+
+#info-facts li + li {
+  margin-top: 6px;
+}
+
+.read-more {
+  display: block;
+  margin: 12px 0 4px;
+  padding: 9px 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--hud-text);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hud-border);
+  border-radius: 6px;
+}
+
+.read-more:hover {
+  background: rgba(255, 255, 255, 0.12);
+}

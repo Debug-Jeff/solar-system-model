@@ -1,3 +1,4 @@
+import { fullscreenSupported, toggleFullscreen } from './fullscreen'
 import { LayersPanel } from './LayersPanel'
 import { useAppStore, type StoreProps } from './useAppStore'
 
@@ -17,11 +18,6 @@ export function RightRail({ store, children }: StoreProps & { children?: React.R
   const toggleInfo = useAppStore(store, (s) => s.toggleInfo)
   const infoCollapsed = useAppStore(store, (s) => s.infoCollapsed)
 
-  function fullscreen(): void {
-    if (document.fullscreenElement) void document.exitFullscreen?.()
-    else void document.documentElement.requestFullscreen?.().catch(() => {})
-  }
-
   return (
     <nav id="right-rail" aria-label="View controls">
       <button className="rail-btn" aria-label="Info" aria-pressed={!infoCollapsed} onClick={toggleInfo}>
@@ -37,9 +33,11 @@ export function RightRail({ store, children }: StoreProps & { children?: React.R
       <button id="btn-reset-view" className="rail-btn" aria-label="Reset view" onClick={resetView}>
         <Icon d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4" />
       </button>
-      <button className="rail-btn" aria-label="Fullscreen" onClick={fullscreen}>
-        <Icon d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-      </button>
+      {fullscreenSupported() && (
+        <button className="rail-btn" aria-label="Fullscreen" onClick={() => void toggleFullscreen()}>
+          <Icon d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+        </button>
+      )}
     </nav>
   )
 }

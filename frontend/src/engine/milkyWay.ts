@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 export const MILKY_WAY_RADIUS_KM = 1.5e10
-const BRIGHTNESS = 0.6
+const BRIGHTNESS = 0.9
 const EPS = (23.4392911 * Math.PI) / 180
 
 export function milkyWayBasis(): THREE.Matrix4 {

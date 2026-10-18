@@ -98,3 +98,24 @@ test('a satellite shows its purpose, launch, live altitude and speed, period and
   expect(row('Position')).toBe('Accurate')
   expect(screen.queryByText('Radius')).toBeNull()
 })
+
+import { vi } from 'vitest'
+import { resetBodyImages } from './bodyImage'
+
+test('the panel shows a NASA photo, a description and a Read more link', async () => {
+  resetBodyImages()
+  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify({ collection: { items: [{ data: [{ title: 'Mars globe', nasa_id: 'PIA00407' }], links: [{ rel: 'preview', href: 'https://images-assets.nasa.gov/image/PIA00407/PIA00407~thumb.jpg' }] }] } }), { status: 200 })
+  )
+  const store = createAppStore(() => Date.UTC(2026, 9, 16))
+  store.getState().setBodies([{ ...base, id: 'mars', name: 'Mars', type: 'planet', facts: ['The red planet.'] }])
+  store.getState().select('mars')
+  render(<InfoPanel store={store} />)
+  const img = (await screen.findByRole('img', { name: 'Mars' })) as HTMLImageElement
+  expect(img.src).toBe('https://images-assets.nasa.gov/image/PIA00407/PIA00407~medium.jpg')
+  const more = screen.getByRole('link', { name: /Read more/ }) as HTMLAnchorElement
+  expect(more.href).toBe('https://science.nasa.gov/mars/')
+  expect(more.rel).toContain('noopener')
+  expect(screen.getByText('The red planet.')).toBeInTheDocument()
+  fetchSpy.mockRestore()
+})

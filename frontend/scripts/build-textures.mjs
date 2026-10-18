@@ -199,7 +199,7 @@ async function milkyWay() {
   const channels = data.length / (width * height)
   const lum = new Float32Array(width * height)
   for (let i = 0; i < width * height; i++) lum[i] = 0.2126 * data[i * channels] + 0.7152 * data[i * channels + 1] + 0.0722 * data[i * channels + 2]
-  const white = Float32Array.from(lum).sort()[Math.floor(lum.length * 0.998)]
+  const white = Float32Array.from(lum).sort()[Math.floor(lum.length * 0.99)]
   const encode = (v) => {
     const x = Math.min(1, Math.max(0, v))
     return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055))

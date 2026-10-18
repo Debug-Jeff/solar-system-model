@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import { fetchBodyImage, type BodyImage } from './bodyImage'
+import { READ_MORE } from './readMore'
 import { availability } from '../ephemeris'
 import { satelliteOrbit, satellitePosition, satelliteVelocity } from '../satellites/store'
 import { bodyHelioKm, distanceKm, earthHelioKm } from '../spacecraft/position'
@@ -91,6 +94,19 @@ export function InfoPanel({ store }: StoreProps) {
       ]
     : []
 
+  const [image, setImage] = useState<BodyImage | null>(null)
+  useEffect(() => {
+    setImage(null)
+    if (!body) return
+    let current = true
+    void fetchBodyImage(body.id, body.name, body.type).then((found) => {
+      if (current) setImage(found)
+    })
+    return () => {
+      current = false
+    }
+  }, [body?.id])
+
   return (
     <aside id="info-panel" className={body && !collapsed ? '' : 'hidden'}>
       <button id="info-collapse" aria-label="Collapse info" onClick={toggleInfo}>
@@ -101,8 +117,40 @@ export function InfoPanel({ store }: StoreProps) {
       </button>
       {body && (
         <>
+          {image && (
+            <figure className="info-image">
+              <img
+                src={image.src}
+                alt={body.name}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                onError={(e) => {
+                  if (e.currentTarget.src !== image.fallback) e.currentTarget.src = image.fallback
+                }}
+              />
+              <figcaption>
+                <a href={image.page} target="_blank" rel="noopener noreferrer">
+                  NASA image: {image.title}
+                </a>
+              </figcaption>
+            </figure>
+          )}
           <h2 id="info-name">{body.name}</h2>
-          <div id="info-type">{formatType(body.type)}</div>
+          <div id="info-type">
+            <span className="type-dot" style={{ background: body.color ?? '#8899aa' }} aria-hidden="true" />
+            {formatType(body.type)}
+          </div>
+          <h3 className="info-heading">Description</h3>
+          <ul id="info-facts">
+            {body.facts.map((fact) => (
+              <li key={fact}>{fact}</li>
+            ))}
+          </ul>
+          {READ_MORE[body.id] && (
+            <a className="read-more" href={READ_MORE[body.id]} target="_blank" rel="noopener noreferrer">
+              Read more on NASA
+            </a>
+          )}
           <div className="info-stats" id="info-stats">
             {stats.map(([label, value]) => (
               <div key={label}>
@@ -111,11 +159,6 @@ export function InfoPanel({ store }: StoreProps) {
               </div>
             ))}
           </div>
-          <ul id="info-facts">
-            {body.facts.map((fact) => (
-              <li key={fact}>{fact}</li>
-            ))}
-          </ul>
         </>
       )}
     </aside>
