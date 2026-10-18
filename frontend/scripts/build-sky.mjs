@@ -5,7 +5,7 @@ import { gunzipSync } from 'node:zlib'
 
 const frontend = join(dirname(fileURLToPath(import.meta.url)), '..')
 const STARS_URL = 'https://heasarc.gsfc.nasa.gov/FTP/heasarc/dbase/tdat_files/heasarc_bsc5p.tdat.gz'
-const LINES_URL = 'https://raw.githubusercontent.com/MarcvdSluys/ConstellationLines/master/ConstellationLines.csv'
+const LINES_URL = 'https://raw.githubusercontent.com/MarcvdSluys/ConstellationLines/158ea7c588dd78a295dc977326e72ad29004d8eb/ConstellationLines.csv'
 const DEFAULT_BV = 0.6
 const round = (v, d) => Math.round(v * 10 ** d) / 10 ** d
 
@@ -59,7 +59,7 @@ for (const line of csv) {
 const file = {
   version: 1,
   attribution:
-    'Stars: Yale Bright Star Catalogue, 5th rev. ed. (Hoffleit & Warren 1991), via NASA HEASARC. Constellation lines: Marc van der Sluys, ConstellationLines (doi:10.5281/zenodo.10397192), CC BY 4.0.',
+    'Stars: Yale Bright Star Catalogue, 5th rev. ed. (Hoffleit & Warren 1991), via NASA HEASARC. Constellation lines: ConstellationLines by Marc van der Sluys (doi:10.5281/zenodo.10397192), licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); converted from HR-number polylines to pairs of indices into this star list.',
   stars: stars.flatMap((s) => [round(s.ra, 4), round(s.dec, 4), round(s.vmag, 2), round(s.bv, 2)]),
   constellations,
 }

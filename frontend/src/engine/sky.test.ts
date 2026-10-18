@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { expect, test } from 'vitest'
-import { parseSkyFile } from '../sky/sky'
+import { bvToRgb, parseSkyFile, raDecToScene } from '../sky/sky'
 import { createSky, SKY_RADIUS_KM } from './sky'
 
 const data = parseSkyFile({
@@ -41,4 +41,21 @@ test('dispose takes the sky out of the scene', () => {
   sky.dispose()
   expect(scene.children).not.toContain(sky.points)
   expect(scene.children).not.toContain(sky.lines)
+})
+
+test('star colours go to the GPU as linear values and the sky is not mirrored', () => {
+  const sky = createSky(new THREE.Scene(), data)
+  const color = sky.points.geometry.getAttribute('aColor')
+  const want = new THREE.Color().setRGB(...bvToRgb(1.85), THREE.SRGBColorSpace)
+  expect(color.getX(2)).toBeCloseTo(want.r, 5)
+  expect(color.getZ(2)).toBeCloseTo(want.b, 5)
+  const east = raDecToScene(90, 0, new THREE.Vector3())
+  const north = raDecToScene(0, 90, new THREE.Vector3())
+  expect(new THREE.Vector3().crossVectors(east, north).dot(raDecToScene(0, 0, new THREE.Vector3()))).toBeCloseTo(1, 9)
+})
+
+test('the served attribution carries the licence link and says the data was converted', async () => {
+  const sky = (await import('../../public/data/sky.json')).default
+  expect(sky.attribution).toContain('https://creativecommons.org/licenses/by/4.0/')
+  expect(sky.attribution).toMatch(/converted/i)
 })

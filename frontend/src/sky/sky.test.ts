@@ -55,9 +55,10 @@ test('brighter stars are bigger and more opaque, within clamps', () => {
     expect(starAlpha(mags[i]!)).toBeLessThanOrEqual(starAlpha(mags[i - 1]!))
   }
   expect(starSizePx(-1.46)).toBe(9)
-  expect(starSizePx(6.5)).toBe(1.5)
+  expect(starSizePx(6.5)).toBe(2)
   expect(starAlpha(-1.46)).toBe(1)
-  expect(starAlpha(6.5)).toBe(0.12)
+  expect(starAlpha(6.5)).toBeLessThan(starAlpha(4.5) / 3)
+  expect(starAlpha(6.5)).toBeGreaterThan(0.02)
 })
 
 test('loadSky returns null and warns once on a missing or broken file', async () => {

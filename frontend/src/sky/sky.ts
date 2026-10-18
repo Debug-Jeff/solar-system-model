@@ -58,11 +58,11 @@ export function bvToRgb(bv: number): [number, number, number] {
 }
 
 export function starSizePx(vmag: number): number {
-  return Math.min(9, Math.max(1.5, 5 * Math.pow(10, -0.2 * (vmag - 1))))
+  return Math.min(9, Math.max(2, 5 * Math.pow(10, -0.2 * (vmag - 1))))
 }
 
 export function starAlpha(vmag: number): number {
-  return Math.min(1, Math.max(0.12, Math.pow(10, -0.4 * (vmag - 2))))
+  return Math.min(1, Math.max(0.025, Math.pow(10, -0.3 * (vmag - 2))))
 }
 
 export async function loadSky(fetchFn: typeof fetch = fetch): Promise<SkyData | null> {

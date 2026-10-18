@@ -54,10 +54,12 @@ export function createSky(scene: THREE.Scene, data: SkyData, dprCap = 2): Sky {
   const sizes = new Float32Array(count)
   const alphas = new Float32Array(count)
   const v = new THREE.Vector3()
+  const c = new THREE.Color()
   for (let i = 0; i < count; i++) {
     raDecToScene(stars[i * 4]!, stars[i * 4 + 1]!, v).multiplyScalar(SKY_RADIUS_KM)
     positions.set([v.x, v.y, v.z], i * 3)
-    colors.set(bvToRgb(stars[i * 4 + 3]!), i * 3)
+    c.setRGB(...bvToRgb(stars[i * 4 + 3]!), THREE.SRGBColorSpace)
+    colors.set([c.r, c.g, c.b], i * 3)
     sizes[i] = starSizePx(stars[i * 4 + 2]!)
     alphas[i] = starAlpha(stars[i * 4 + 2]!)
   }
