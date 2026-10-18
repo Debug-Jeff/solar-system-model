@@ -1,4 +1,5 @@
 import { ActiveShowers } from './ActiveShowers'
+import { CreditsLink } from './Credits'
 import { DateModal } from './DateModal'
 import { FollowIndicator } from './FollowIndicator'
 import { InfoPanel } from './InfoPanel'
@@ -19,7 +20,9 @@ export function App({ store }: StoreProps) {
       <footer id="hud-bottom">
         <ActiveShowers store={store} />
         <TimeBar store={store} />
-        <LayersPanel store={store} />
+        <LayersPanel store={store}>
+          <CreditsLink />
+        </LayersPanel>
       </footer>
       <FollowIndicator store={store} />
       <DateModal store={store} />
