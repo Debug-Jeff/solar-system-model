@@ -43,14 +43,14 @@ function glowTexture(): THREE.Texture {
   return tex
 }
 
-export function createScene(canvas: HTMLCanvasElement): SceneParts {
+export function createScene(canvas: HTMLCanvasElement, quality: { pixelRatioCap: number; antialias: boolean }): SceneParts {
   const scene = new THREE.Scene()
 
   const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, CAMERA_NEAR_KM, CAMERA_FAR_KM)
   camera.position.copy(INITIAL_CAMERA_POSITION)
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: quality.antialias, logarithmicDepthBuffer: true })
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.pixelRatioCap))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping

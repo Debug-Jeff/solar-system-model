@@ -1,14 +1,20 @@
 import * as THREE from 'three'
+import bundledManifest from '../../public/textures/manifest.json'
+import type { QualityTier } from './quality'
+
+export interface TextureManifest {
+  version: number
+  textures: Record<string, Partial<Record<QualityTier, string>> & { credit: string }>
+}
 
 export interface Textures {
   sun: THREE.Texture
   mercury: THREE.Texture
-  venus: { surface: THREE.Texture; atmosphere: THREE.Texture }
+  venus: { clouds: THREE.Texture }
   earth: {
     day: THREE.Texture
     night: THREE.Texture
     clouds: THREE.Texture
-    normal: THREE.Texture
     specular: THREE.Texture
   }
   moon: { map: THREE.Texture; bump: THREE.Texture }
@@ -24,49 +30,49 @@ export interface TextureLoadingCallbacks {
   onDone(): void
 }
 
-export function createTextures({ onProgress, onDone }: TextureLoadingCallbacks): Textures {
+const FALLBACK_ORDER: Record<QualityTier, QualityTier[]> = {
+  high: ['high', 'medium', 'low'],
+  medium: ['medium', 'low'],
+  low: ['low'],
+}
+
+export function resolveTexture(manifest: TextureManifest, key: string, tier: QualityTier): string | null {
+  const entry = manifest.textures[key]
+  if (!entry) return null
+  for (const t of FALLBACK_ORDER[tier]) {
+    const path = entry[t]
+    if (path) return `/${path}`
+  }
+  return null
+}
+
+export function createTextures(tier: QualityTier, { onProgress, onDone }: TextureLoadingCallbacks, manifest: TextureManifest = bundledManifest): Textures {
   const manager = new THREE.LoadingManager()
   manager.onProgress = (_url, loaded, total) => onProgress(loaded, total)
   manager.onLoad = onDone
   manager.onError = (url) => console.warn(`Texture failed to load: ${url}`)
   const loader = new THREE.TextureLoader(manager)
 
-  const color = (path: string) => {
-    const tex = loader.load(path)
-    tex.colorSpace = THREE.SRGBColorSpace
+  const load = (key: string, colorSpace: THREE.ColorSpace) => {
+    const path = resolveTexture(manifest, key, tier)
+    const tex = path ? loader.load(path) : new THREE.Texture()
+    tex.colorSpace = colorSpace
     return tex
   }
-  const data = (path: string) => loader.load(path)
+  const color = (key: string) => load(key, THREE.SRGBColorSpace)
+  const data = (key: string) => load(key, THREE.NoColorSpace)
 
   return {
-    sun: color('/textures/sun/sun.jpg'),
-    mercury: color('/textures/mercury/mercury.jpg'),
-    venus: {
-      surface: color('/textures/venus/venus_surface.jpg'),
-      atmosphere: color('/textures/venus/venus_atmosphere.jpg'),
-    },
-    earth: {
-      day: color('/textures/earth/day.jpg'),
-      night: color('/textures/earth/night.jpg'),
-      clouds: data('/textures/earth/clouds.jpg'),
-      normal: data('/textures/earth/normal.jpg'),
-      specular: data('/textures/earth/specular.jpg'),
-    },
-    moon: {
-      map: color('/textures/moon/moon.jpg'),
-      bump: data('/textures/moon/moon_bump.jpg'),
-    },
-    mars: color('/textures/mars/mars.jpg'),
-    jupiter: color('/textures/jupiter/jupiter.jpg'),
-    saturn: {
-      map: color('/textures/saturn/saturn.jpg'),
-      ring: color('/textures/saturn/saturn_ring.png'),
-    },
-    uranus: {
-      map: color('/textures/uranus/uranus.jpg'),
-      ring: color('/textures/uranus/uranus_ring.png'),
-    },
-    neptune: color('/textures/neptune/neptune.jpg'),
+    sun: color('sun'),
+    mercury: color('mercury'),
+    venus: { clouds: color('venus') },
+    earth: { day: color('earthDay'), night: color('earthNight'), clouds: data('earthClouds'), specular: data('earthSpecular') },
+    moon: { map: color('moon'), bump: data('moonBump') },
+    mars: color('mars'),
+    jupiter: color('jupiter'),
+    saturn: { map: color('saturn'), ring: color('saturnRing') },
+    uranus: { map: color('uranus'), ring: color('uranusRing') },
+    neptune: color('neptune'),
   }
 }
 

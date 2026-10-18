@@ -21,6 +21,7 @@ import { createScene, INITIAL_CAMERA_POSITION } from './scene'
 import type { SmallBodiesData } from '../ephemeris/smallBodies'
 import { createKeplerBelt } from './belts'
 import { createTapDetector } from './tap'
+import { browserQualityEnv, detectQuality, QUALITY } from './quality'
 import { createTextures, loadLiveEarthTexture } from './textures'
 
 
@@ -44,11 +45,12 @@ const raycaster = new THREE.Raycaster()
 const ndc = new THREE.Vector2()
 
 export function createEngine({ canvas, labelsLayer, store, smallBodies }: EngineOptions): EngineHandle {
-  const textures = createTextures({
+  const quality = QUALITY[detectQuality(browserQualityEnv())]
+  const textures = createTextures(quality.texture, {
     onProgress: (loaded, total) => store.getState().setLoading({ text: `Loading textures… ${loaded}/${total}` }),
     onDone: () => store.getState().setLoading({ active: false }),
   })
-  const parts = createScene(canvas)
+  const parts = createScene(canvas, quality)
   const { scene, camera, renderer, controls } = parts
 
   const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs)
