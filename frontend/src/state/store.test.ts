@@ -139,7 +139,7 @@ test('resetView clears follow and bumps resetViewSeq', () => {
 
 test('setLayer toggles one layer only', () => {
   st().setLayer('orbits', false)
-  expect(st().layers).toEqual({ orbits: false, labels: true, liveEarthTexture: false, constellations: false, meteorShowers: true })
+  expect(st().layers).toEqual({ orbits: false, labels: true, constellations: false, meteorShowers: true })
 })
 
 test('setSimTimeMs jumps to a moment and clamps to the supported range', () => {

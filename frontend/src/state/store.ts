@@ -9,7 +9,6 @@ export const MAX_SIM_MS = Date.UTC(MAX_JUMP_YEAR, 11, 31, 23, 59, 59)
 export const RATE_STEPS: readonly number[] = [1, 60, 3600, 86_400, 604_800, 2_629_800, 31_557_600]
 export const LIVE_TOLERANCE_MS = 2000
 
-export type NasaPanelContent = { title: string; imageUrl: string; caption: string }
 
 export interface AppState {
   clock: () => number
@@ -20,9 +19,8 @@ export interface AppState {
   selectedId: string | null
   followId: string | null
   followSeq: number
-  layers: { orbits: boolean; labels: boolean; liveEarthTexture: boolean; constellations: boolean; meteorShowers: boolean }
+  layers: { orbits: boolean; labels: boolean; constellations: boolean; meteorShowers: boolean }
   showers: Shower[]
-  nasaPanel: NasaPanelContent | null
   dateModalOpen: boolean
   loading: { active: boolean; text: string; error: string | null }
   resetViewSeq: number
@@ -45,8 +43,6 @@ export interface AppActions {
   stopFollow(): void
   setLayer(layer: keyof AppState['layers'], on: boolean): void
   setShowers(showers: Shower[]): void
-  showNasaPanel(content: NasaPanelContent): void
-  closeNasaPanel(): void
   setDateModalOpen(open: boolean): void
   setLoading(patch: Partial<AppState['loading']>): void
   resetView(): void
@@ -92,9 +88,8 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     selectedId: null,
     followId: null,
     followSeq: 0,
-    layers: { orbits: true, labels: true, liveEarthTexture: false, constellations: false, meteorShowers: true },
+    layers: { orbits: true, labels: true, constellations: false, meteorShowers: true },
     showers: [],
-    nasaPanel: null,
     dateModalOpen: false,
     loading: { active: true, text: 'Loading textures…', error: null },
     resetViewSeq: 0,
@@ -130,8 +125,6 @@ export function createAppStore(nowMs: () => number = Date.now): AppStore {
     stopFollow: () => set({ followId: null }),
     setLayer: (layer, on) => set((s) => ({ layers: { ...s.layers, [layer]: on } })),
     setShowers: (showers) => set({ showers }),
-    showNasaPanel: (content) => set({ nasaPanel: content }),
-    closeNasaPanel: () => set({ nasaPanel: null }),
     setDateModalOpen: (open) => set({ dateModalOpen: open }),
     setLoading: (patch) => set((s) => ({ loading: { ...s.loading, ...patch } })),
     setRate: (rate) => {

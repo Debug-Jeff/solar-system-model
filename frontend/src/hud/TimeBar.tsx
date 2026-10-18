@@ -25,17 +25,8 @@ export function TimeBar({ store }: StoreProps) {
       <span className={live ? 'rate-label live' : 'rate-label'}>{formatRate(rate, paused)}</span>
       <RateArc store={store} />
       <div className="rate-controls">
-        <button className="icon-btn" aria-label="Reverse" onClick={actions.reverse}>
-          ⇄
-        </button>
-        <button className="icon-btn" aria-label="Slower" onClick={actions.slower}>
-          ◀◀
-        </button>
         <button id="btn-play" className="icon-btn" title="Play/Pause" onClick={actions.togglePlay}>
           {paused ? '▶' : '⏸'}
-        </button>
-        <button className="icon-btn" aria-label="Faster" onClick={actions.faster}>
-          ▶▶
         </button>
       </div>
     </div>

@@ -78,9 +78,3 @@ export function createTextures(tier: QualityTier, { onProgress, onDone }: Textur
   }
 }
 
-export function loadLiveEarthTexture(apiBase: string): Promise<THREE.Texture> {
-  return new THREE.TextureLoader().loadAsync(apiBase + '/api/gibs/earth-texture').then((tex) => {
-    tex.colorSpace = THREE.SRGBColorSpace
-    return tex
-  })
-}

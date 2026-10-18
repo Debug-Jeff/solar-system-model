@@ -1,12 +1,10 @@
 import * as THREE from 'three'
-import { API_BASE } from '../api/client'
 import { loadEphemSet } from '../ephemeris/loader'
 import { registerSet } from '../ephemeris/moonStore'
 import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
 import { flyToDistance, followMinDistance } from './flyTo'
 import { createFollowController } from './follow'
-import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
 import { loadShowers } from '../meteors/showers'
 import { createMeteorStreams, type MeteorStreams } from './meteorStreams'
@@ -26,7 +24,7 @@ import { createModelLoader, gltfLoad } from './models'
 import { viewBridge } from './viewBridge'
 import { zoomCamera } from './zoom'
 import { browserQualityEnv, detectQuality, QUALITY } from './quality'
-import { createTextures, loadLiveEarthTexture } from './textures'
+import { createTextures } from './textures'
 
 
 const SECONDS_PER_HOUR = 3600
@@ -67,7 +65,6 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     ? [createKeplerBelt(scene, smallBodies.belts.main, 0xd8c6a4, 2), createKeplerBelt(scene, smallBodies.belts.kuiper, 0x9fb6d4, 2)]
     : []
   const follow = createFollowController(camera, controls)
-  const originalEarthDayMap = bodies.earthMaterial.map
   const followTarget = new THREE.Vector3()
 
   function startFollowing(id: string): void {
@@ -157,22 +154,8 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     }
     if (prev && state.layers.constellations !== prev.layers.constellations) sky?.setConstellations(state.layers.constellations)
     if (prev && state.layers.meteorShowers !== prev.layers.meteorShowers) streams?.setVisible(state.layers.meteorShowers)
-    if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
-      liveTexture.set(state.layers.liveEarthTexture)
-    }
   }
 
-  const liveTexture = createLiveTextureSwitch({
-    load: () => loadLiveEarthTexture(API_BASE),
-    apply: (tex) => {
-      bodies.earthMaterial.map = tex ?? originalEarthDayMap
-      bodies.earthMaterial.needsUpdate = true
-    },
-    onFail: (err) => {
-      console.warn('Live Earth texture unavailable, keeping static texture.', err)
-      store.getState().setLayer('liveEarthTexture', false)
-    },
-  })
 
   applyState(store.getState(), null)
   const unsubscribe = store.subscribe((state, prev) => applyState(state, prev))
@@ -257,7 +240,6 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       labelsLayer.removeEventListener('wheel', forwardWheel)
       document.removeEventListener('visibilitychange', onVisibility)
       timer.dispose()
-      liveTexture.dispose()
       markers.dispose()
       belts.forEach((belt) => belt.dispose())
       bodies.dispose()
