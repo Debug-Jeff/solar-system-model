@@ -1,16 +1,16 @@
 import * as THREE from 'three'
-import { API_BASE } from '../api/client'
 import { loadEphemSet } from '../ephemeris/loader'
 import { registerSet } from '../ephemeris/moonStore'
 import { isLive, type AppState, type AppStore } from '../state/store'
 import { createBodies } from './bodies'
 import { flyToDistance, followMinDistance } from './flyTo'
 import { createFollowController } from './follow'
-import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
 import { loadShowers } from '../meteors/showers'
 import { createMeteorStreams, type MeteorStreams } from './meteorStreams'
 import { loadSky } from '../sky/sky'
+import { createMilkyWay } from './milkyWay'
+import { clearSelectionOnPress } from './selection'
 import { createSky, type Sky } from './sky'
 import { coverageActions, isOptionalBody } from './coverage'
 import { loadSatellites } from '../satellites/loader'
@@ -23,8 +23,9 @@ import { createKeplerBelt } from './belts'
 import { createTapDetector } from './tap'
 import { createModelLoader, gltfLoad } from './models'
 import { viewBridge } from './viewBridge'
+import { zoomCamera } from './zoom'
 import { browserQualityEnv, detectQuality, QUALITY } from './quality'
-import { createTextures, loadLiveEarthTexture } from './textures'
+import { createTextures, loadProgressive } from './textures'
 
 
 const SECONDS_PER_HOUR = 3600
@@ -65,7 +66,6 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     ? [createKeplerBelt(scene, smallBodies.belts.main, 0xd8c6a4, 2), createKeplerBelt(scene, smallBodies.belts.kuiper, 0x9fb6d4, 2)]
     : []
   const follow = createFollowController(camera, controls)
-  const originalEarthDayMap = bodies.earthMaterial.map
   const followTarget = new THREE.Vector3()
 
   function startFollowing(id: string): void {
@@ -101,6 +101,11 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
 
   requestSet('spacecraft')
   let sky: Sky | null = null
+  const stopClearingSelection = clearSelectionOnPress(canvas)
+  const milkyWay = createMilkyWay(scene)
+  loadProgressive('milkyWay', quality.texture, (tex) => {
+    if (!disposed) milkyWay.setTexture(tex)
+  })
   let streams: MeteorStreams | null = null
   void loadShowers().then((showers) => {
     if (!showers || disposed) return
@@ -148,24 +153,14 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       else stopFollowing()
     }
     if (!prev || state.layers.labels !== prev.layers.labels) markers.setEnabled(state.layers.labels)
+    if (prev && state.zoom.seq !== prev.zoom.seq) {
+      zoomCamera(camera.position, controls.target, state.zoom.factor, controls.minDistance, controls.maxDistance)
+      controls.update()
+    }
     if (prev && state.layers.constellations !== prev.layers.constellations) sky?.setConstellations(state.layers.constellations)
     if (prev && state.layers.meteorShowers !== prev.layers.meteorShowers) streams?.setVisible(state.layers.meteorShowers)
-    if (prev && state.layers.liveEarthTexture !== prev.layers.liveEarthTexture) {
-      liveTexture.set(state.layers.liveEarthTexture)
-    }
   }
 
-  const liveTexture = createLiveTextureSwitch({
-    load: () => loadLiveEarthTexture(API_BASE),
-    apply: (tex) => {
-      bodies.earthMaterial.map = tex ?? originalEarthDayMap
-      bodies.earthMaterial.needsUpdate = true
-    },
-    onFail: (err) => {
-      console.warn('Live Earth texture unavailable, keeping static texture.', err)
-      store.getState().setLayer('liveEarthTexture', false)
-    },
-  })
 
   applyState(store.getState(), null)
   const unsubscribe = store.subscribe((state, prev) => applyState(state, prev))
@@ -222,6 +217,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     keepOutsideBodies(state.followId)
     camera.updateMatrixWorld()
     sky?.update(camera)
+    milkyWay.update(camera)
 
     const height = renderer.domElement.clientHeight
     bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
@@ -249,11 +245,12 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       labelsLayer.removeEventListener('wheel', forwardWheel)
       document.removeEventListener('visibilitychange', onVisibility)
       timer.dispose()
-      liveTexture.dispose()
       markers.dispose()
       belts.forEach((belt) => belt.dispose())
       bodies.dispose()
       sky?.dispose()
+      milkyWay.dispose()
+      stopClearingSelection()
       streams?.dispose()
       parts.dispose()
     },

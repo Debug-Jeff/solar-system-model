@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test } from 'vitest'
 import { createAppStore, type AppStore } from '../state/store'
@@ -24,8 +24,10 @@ test('LIVE badge is lit at start and the rate reads real rate', () => {
   expect(screen.getByText('real rate')).toBeInTheDocument()
 })
 
-test('faster leaves LIVE; clicking LIVE comes back', async () => {
-  await userEvent.click(screen.getByRole('button', { name: 'Faster' }))
+const dial = () => screen.getByRole('slider', { name: 'Time rate' })
+
+test('speeding up leaves LIVE; clicking LIVE comes back', async () => {
+  fireEvent.keyDown(dial(), { key: 'ArrowRight' })
   expect(screen.getByText('1 min/s')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Go live' })).not.toHaveClass('live')
   await userEvent.click(screen.getByRole('button', { name: 'Go live' }))
@@ -33,16 +35,16 @@ test('faster leaves LIVE; clicking LIVE comes back', async () => {
   expect(screen.getByRole('button', { name: 'Go live' })).toHaveClass('live')
 })
 
-test('slower, reverse and pause drive the store', async () => {
-  await userEvent.click(screen.getByRole('button', { name: 'Faster' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Faster' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Slower' }))
+test('the dial drives the store, and there are no step or pause buttons', () => {
+  fireEvent.keyDown(dial(), { key: 'ArrowRight' })
+  fireEvent.keyDown(dial(), { key: 'ArrowRight' })
+  fireEvent.keyDown(dial(), { key: 'ArrowLeft' })
   expect(store.getState().rate).toBe(60)
-  await userEvent.click(screen.getByRole('button', { name: 'Reverse' }))
-  expect(store.getState().rate).toBe(-60)
+  act(() => store.getState().setRate(-60))
   expect(screen.getByText('−1 min/s')).toBeInTheDocument()
-  await userEvent.click(screen.getByTitle('Play/Pause'))
-  expect(screen.getByText('PAUSED')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Faster' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Reverse' })).toBeNull()
+  expect(screen.queryByTitle('Play/Pause')).toBeNull()
 })
 
 test('shows local date, time and zone for the sim time', () => {

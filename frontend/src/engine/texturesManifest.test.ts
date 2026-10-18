@@ -5,7 +5,7 @@ const files = import.meta.glob('../../public/textures/**/*.{webp,png}', { query:
 const existing = new Set(Object.keys(files).map((k) => k.replace('../../public/', '')))
 const oldJpegs = import.meta.glob('../../public/textures/**/*.jpg', { query: '?url', import: 'default', eager: true })
 
-const REQUIRED = ['sun', 'mercury', 'venus', 'earthDay', 'earthNight', 'earthClouds', 'earthSpecular', 'moon', 'moonBump', 'mars', 'jupiter', 'saturn', 'saturnRing', 'uranus', 'uranusRing', 'neptune']
+const REQUIRED = ['sun', 'mercury', 'venus', 'earthDay', 'earthNight', 'earthClouds', 'earthSpecular', 'moon', 'moonBump', 'mars', 'jupiter', 'saturn', 'saturnRing', 'uranus', 'uranusRing', 'neptune', 'milkyWay']
 
 test('every texture the engine needs has a file per tier and a credit', () => {
   const textures = manifest.textures as Record<string, { low: string; medium: string; high: string; credit: string }>

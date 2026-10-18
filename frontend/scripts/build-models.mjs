@@ -15,6 +15,16 @@ const staging = join(frontend, 'public', 'models.staging')
 const BASE = 'https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Models/'
 const MAX_FILE_MB = 1.5
 const MAX_TOTAL_MB = 12
+const SMALL_BODY_BASE = 'https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/'
+const SMALL_BODY_CREDIT = 'NASA Visualization Technology Applications and Development (VTAD), science.nasa.gov 3D resources'
+// Longest axis in km, so each shape model is drawn at its real size.
+const SMALL_BODIES = {
+  vesta: { url: SMALL_BODY_BASE + 'v/Vesta_1_100.glb', sizeKm: 572.6 },
+  eros: { url: SMALL_BODY_BASE + 'e/Eros_1_10.glb', sizeKm: 34.4 },
+  itokawa: { url: SMALL_BODY_BASE + 'i/Itokawa_1_1.glb', sizeKm: 0.535 },
+  bennu: { url: SMALL_BODY_BASE + 'b/Bennu_1_1.glb', sizeKm: 0.565 },
+  arrokoth: { url: SMALL_BODY_BASE + 'a/Arrokoth.glb', sizeKm: 36 },
+}
 const CREDIT = 'NASA 3D Resources (described by NASA as free and without copyright; used under NASA media usage guidelines; no endorsement implied)'
 
 const MODELS = {
@@ -46,7 +56,7 @@ async function download(path) {
   mkdirSync(cache, { recursive: true })
   const file = join(cache, path.replaceAll('/', '__'))
   if (existsSync(file) && statSync(file).size > 0) return file
-  const res = await fetch(BASE + path.split('/').map(encodeURIComponent).join('/'))
+  const res = await fetch(path.startsWith('https://') ? path : BASE + path.split('/').map(encodeURIComponent).join('/'))
   if (!res.ok) throw new Error(`${path}: ${res.status}`)
   writeFileSync(file, Buffer.from(await res.arrayBuffer()))
   return file
@@ -61,11 +71,15 @@ rmSync(staging, { recursive: true, force: true })
 mkdirSync(staging, { recursive: true })
 
 const manifest = { version: 1, models: {} }
+const sources = [
+  ...Object.entries(MODELS).map(([id, path]) => ({ id, path, source: `NASA-3D-Resources/3D Models/${path}`, credit: CREDIT })),
+  ...Object.entries(SMALL_BODIES).map(([id, { url, sizeKm }]) => ({ id, path: url, source: url, credit: SMALL_BODY_CREDIT, sizeKm })),
+]
 const built = new Map()
 let totalBytes = 0
-for (const [id, path] of Object.entries(MODELS)) {
+for (const { id, path, source: origin, credit, sizeKm } of sources) {
   if (!built.has(path)) {
-    const name = path.split('/')[0].replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase()
+    const name = (path.startsWith('https://') ? path.split('/').pop().replace(/\.glb$/, '') : path.split('/')[0]).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase()
     const rel = `models/${name}.glb`
     const target = join(staging, `${name}.glb`)
     const source = await download(path)
@@ -100,7 +114,7 @@ for (const [id, path] of Object.entries(MODELS)) {
       console.log(`${rel}: ${(statSync(source).size / 1e6).toFixed(2)} → ${(bytes / 1e6).toFixed(2)} MB`)
     }
   }
-  if (built.get(path)) manifest.models[id] = { file: built.get(path), source: `NASA-3D-Resources/3D Models/${path}`, credit: CREDIT }
+  if (built.get(path)) manifest.models[id] = { file: built.get(path), source: origin, credit, ...(sizeKm ? { sizeKm } : {}) }
 }
 if (totalBytes / 1e6 > MAX_TOTAL_MB) throw new Error(`models total ${(totalBytes / 1e6).toFixed(2)} MB, over ${MAX_TOTAL_MB} MB`)
 writeFileSync(join(staging, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')

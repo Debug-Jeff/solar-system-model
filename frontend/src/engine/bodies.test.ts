@@ -124,7 +124,8 @@ test('a Sun-orbiting spacecraft trail shows with Orbits on and uses the native s
   cam.updateMatrixWorld()
   bodies.updateView(cam, 800, null, true)
   const parker = bodies.byId.get('parker')!
-  expect(parker.orbitLine!.visible).toBe(true)
+  expect(parker.orbitLine!.visible).toBe(false)
+  expect(parker.trail!.line.visible).toBe(true)
   expect(parker.orbitPoints.length).toBe(parkerTrack.count)
   bodies.dispose()
 })
@@ -214,7 +215,7 @@ test('satellite orbits only show once the Earth system is big on screen', () => 
     cam.lookAt(earth)
     cam.updateMatrixWorld()
     bodies.updateView(cam, 800, null, true)
-    return bodies.byId.get('iss')!.orbitLine!.visible
+    return bodies.byId.get('iss')!.trail!.line.visible
   }
   expect(look(5e7)).toBe(false)
   expect(look(3e4)).toBe(true)
@@ -315,5 +316,72 @@ test('a craft out of coverage hides its model, and other placeholders stay visib
   let visible = true
   iss.model!.traverseAncestors((a) => { if (!a.visible) visible = false })
   expect(visible).toBe(false)
+  bodies.dispose()
+})
+
+import { orbitFade } from './bodies'
+
+test('a body\'s own orbit fades out as the body fills the screen', () => {
+  expect(orbitFade(2)).toBe(1)
+  expect(orbitFade(4)).toBe(1)
+  expect(orbitFade(17)).toBeGreaterThan(0)
+  expect(orbitFade(17)).toBeLessThan(1)
+  expect(orbitFade(30)).toBe(0)
+  expect(orbitFade(500)).toBe(0)
+})
+
+test('zooming right up to Earth hides its orbit line; from afar it shows', () => {
+  const t = Date.parse('2026-10-18T12:00:00Z')
+  const bodies = createBodies(new THREE.Scene(), data, textures, t)
+  bodies.updateFrame(t, 0)
+  const earth = bodies.byId.get('earth')!
+  const pos = bodies.getBodyWorldPos('earth', new THREE.Vector3())
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  const look = (distanceKm: number) => {
+    cam.position.copy(pos).add(new THREE.Vector3(0, distanceKm, 0))
+    cam.lookAt(pos)
+    cam.updateMatrixWorld()
+    bodies.updateView(cam, 800, 'earth', true)
+    return earth.orbitLine!.visible
+  }
+  expect(look(1e8)).toBe(true)
+  expect(look(3e4)).toBe(false)
+  bodies.dispose()
+})
+
+test('trails go to satellites, spacecraft, asteroids and comets; planets keep full orbits', () => {
+  const t = Date.parse('2026-10-18T12:00:00Z')
+  const bodies = createBodies(new THREE.Scene(), craftData, textures, t)
+  expect(bodies.byId.get('parker')!.trail).not.toBeNull()
+  expect(bodies.byId.get('earth')!.trail).toBeNull()
+  bodies.dispose()
+})
+
+test('asteroids and comets are rocks, not spheres, and comets carry a glowing coma', () => {
+  const rocky: Body[] = [
+    ...data,
+    { ...base, id: 'bennu', name: 'Bennu', type: 'asteroid', radiusKm: 0.25, distanceFromSunAU: 1.1, color: '#c9a77a' },
+    { ...base, id: 'halley', name: "Halley's Comet", type: 'comet', radiusKm: 5.5, distanceFromSunAU: 17.8, color: '#7fe0ff' },
+  ]
+  const bodies = createBodies(new THREE.Scene(), rocky, textures, inside)
+  const isSphere = (m: THREE.Mesh) => m.geometry instanceof THREE.SphereGeometry
+  expect(isSphere(bodies.byId.get('bennu')!.mesh)).toBe(false)
+  expect(isSphere(bodies.byId.get('halley')!.mesh)).toBe(false)
+  expect(isSphere(bodies.byId.get('earth')!.mesh)).toBe(true)
+  expect(bodies.byId.get('halley')!.mesh.children.some((c) => c instanceof THREE.Sprite)).toBe(true)
+  bodies.dispose()
+})
+
+test('an asteroid with a real NASA shape model swaps it in when selected', async () => {
+  const models = createModelLoader(async () => new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1), new THREE.MeshStandardMaterial()), { version: 1, models: { bennu: { file: 'models/bennu.glb', credit: 'NASA', sizeKm: 0.565 } } })
+  const rocky: Body[] = [...data, { ...base, id: 'bennu', name: 'Bennu', type: 'asteroid', radiusKm: 0.25, distanceFromSunAU: 1.1, color: '#c9a77a' }]
+  const bodies = createBodies(new THREE.Scene(), rocky, textures, inside, models)
+  bodies.updateFrame(inside, 0)
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  cam.position.set(0, 0, 1e9)
+  cam.updateMatrixWorld()
+  bodies.updateView(cam, 800, 'bennu', true)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(bodies.byId.get('bennu')!.model).not.toBeNull()
   bodies.dispose()
 })

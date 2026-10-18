@@ -1,71 +1,35 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { expect, test, vi } from 'vitest'
-import type { ApodResponse, EpicItem } from '../api/client'
+import { act, render, screen } from '@testing-library/react'
+import { expect, test } from 'vitest'
 import { createAppStore } from '../state/store'
+import type { Body } from '../types/body'
 import { TopBar } from './TopBar'
 
-function deferred<T>() {
-  let resolve!: (v: T) => void
-  let reject!: (e: unknown) => void
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  return { promise, resolve, reject }
-}
+const jupiter = { id: 'jupiter', name: 'Jupiter', type: 'planet', radiusKm: 1, orbitalPeriodDays: 1, rotationPeriodHours: 1, axialTiltDeg: 0, meanTempC: 0, moonCount: 0, facts: [] } as Body
 
-test('APOD button disables while loading and re-enables with an error on failure', async () => {
+test('the breadcrumb names the body being followed and clears when following stops', () => {
   const store = createAppStore()
-  const pending = deferred<ApodResponse>()
-  const loaders = { fetchApod: vi.fn(() => pending.promise), fetchLatestEpic: vi.fn<() => Promise<EpicItem>>() }
-  render(<TopBar store={store} loaders={loaders} />)
-  const button = screen.getByRole('button', { name: 'Picture of the Day' })
-  await userEvent.click(button)
-  expect(button).toBeDisabled()
-  pending.reject(new Error('503'))
-  expect(await screen.findByText('Could not load — try again.')).toBeInTheDocument()
-  expect(button).toBeEnabled()
+  store.getState().setBodies([jupiter])
+  render(<TopBar store={store} />)
+  act(() => store.getState().select('jupiter'))
+  expect(screen.getByText(/Jupiter/)).toBeInTheDocument()
+  act(() => store.getState().stopFollow())
+  expect(screen.queryByText(/Jupiter/)).toBeNull()
 })
 
-test('each button stays disabled until its own request settles', async () => {
-  const store = createAppStore()
-  const apod = deferred<ApodResponse>()
-  const epic = deferred<EpicItem>()
-  const loaders = { fetchApod: vi.fn(() => apod.promise), fetchLatestEpic: vi.fn(() => epic.promise) }
-  render(<TopBar store={store} loaders={loaders} />)
-  const apodButton = screen.getByRole('button', { name: 'Picture of the Day' })
-  const epicButton = screen.getByRole('button', { name: 'Live Earth Photo' })
-  await userEvent.click(apodButton)
-  await userEvent.click(epicButton)
-  expect(apodButton).toBeDisabled()
-  expect(epicButton).toBeDisabled()
-  apod.resolve({ title: 'a', url: '/a.jpg', explanation: '' })
-  await screen.findByRole('button', { name: 'Picture of the Day' })
-  await waitFor(() => expect(apodButton).toBeEnabled())
-  expect(epicButton).toBeDisabled()
-  epic.resolve({ date: '2026-10-15 00:00:00', caption: '', imageUrl: '/e.png' })
-  await waitFor(() => expect(epicButton).toBeEnabled())
+test('there is no menu or NASA image buttons any more', () => {
+  render(<TopBar store={createAppStore()} />)
+  expect(screen.queryByRole('button', { name: /Menu/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Picture of the Day' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Share' })).toBeInTheDocument()
 })
 
-test('APOD success opens the NASA panel', async () => {
+test('pressing Solar System stops following and zooms back out', async () => {
   const store = createAppStore()
-  const loaders = {
-    fetchApod: vi.fn(async () => ({ title: 'Nebula', date: '2026-10-16', url: '/a.jpg', explanation: 'gas' })),
-    fetchLatestEpic: vi.fn<() => Promise<EpicItem>>(),
-  }
-  render(<TopBar store={store} loaders={loaders} />)
-  await userEvent.click(screen.getByRole('button', { name: 'Picture of the Day' }))
-  expect(store.getState().nasaPanel).toEqual({ title: 'Nebula — 2026-10-16', imageUrl: '/a.jpg', caption: 'gas' })
-})
-
-test('Live Earth success opens the NASA panel with the EPIC date', async () => {
-  const store = createAppStore()
-  const loaders = {
-    fetchApod: vi.fn<() => Promise<ApodResponse>>(),
-    fetchLatestEpic: vi.fn(async () => ({ date: '2026-10-15 01:02:03', caption: 'earth', imageUrl: '/e.png' })),
-  }
-  render(<TopBar store={store} loaders={loaders} />)
-  await userEvent.click(screen.getByRole('button', { name: 'Live Earth Photo' }))
-  expect(store.getState().nasaPanel?.title).toBe('Live Earth — DSCOVR EPIC (2026-10-15)')
+  store.getState().setBodies([jupiter])
+  render(<TopBar store={store} />)
+  act(() => store.getState().select('jupiter'))
+  const before = store.getState().resetViewSeq
+  act(() => screen.getByRole('button', { name: /Solar System/ }).click())
+  expect(store.getState().followId).toBeNull()
+  expect(store.getState().resetViewSeq).toBe(before + 1)
 })

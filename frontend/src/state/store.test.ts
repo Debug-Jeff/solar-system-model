@@ -139,7 +139,7 @@ test('resetView clears follow and bumps resetViewSeq', () => {
 
 test('setLayer toggles one layer only', () => {
   st().setLayer('orbits', false)
-  expect(st().layers).toEqual({ orbits: false, labels: true, liveEarthTexture: false, constellations: false, meteorShowers: true })
+  expect(st().layers).toEqual({ orbits: false, labels: true, constellations: false, meteorShowers: true })
 })
 
 test('setSimTimeMs jumps to a moment and clamps to the supported range', () => {
@@ -148,4 +148,25 @@ test('setSimTimeMs jumps to a moment and clamps to the supported range', () => {
   expect(store.getState().simTimeMs).toBe(Date.UTC(2030, 0, 1, 6))
   store.getState().setSimTimeMs(Date.UTC(1700, 0, 1))
   expect(store.getState().simTimeMs).toBe(MIN_SIM_MS)
+})
+
+test('setRate, zoomBy and toggleInfo drive the new HUD controls', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 18))
+  store.getState().setRate(-3600)
+  expect(store.getState().rate).toBe(-3600)
+  store.getState().setRate(7)
+  expect(store.getState().rate).toBe(-3600)
+  const seq = store.getState().zoom.seq
+  store.getState().zoomBy(0.5)
+  expect(store.getState().zoom).toEqual({ seq: seq + 1, factor: 0.5 })
+  expect(store.getState().infoCollapsed).toBe(false)
+  store.getState().toggleInfo()
+  expect(store.getState().infoCollapsed).toBe(true)
+})
+
+test('moving the rate dial resumes time that stopped at the edge of the date range', () => {
+  const store = createAppStore(() => Date.UTC(2026, 9, 18))
+  store.setState({ paused: true })
+  store.getState().setRate(60)
+  expect(store.getState().paused).toBe(false)
 })

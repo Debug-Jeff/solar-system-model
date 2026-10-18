@@ -94,7 +94,7 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
     update(entries, camera, width, height, selectedId) {
       const fovY = THREE.MathUtils.degToRad(camera.fov)
       const candidates: MarkerRect[] = []
-      const placed = new Map<string, { x: number; y: number; ringHidden: boolean }>()
+      const placed = new Map<string, { x: number; y: number; ringHidden: boolean; keepDot: boolean }>()
       for (const entry of entries) {
         const el = ensure(entry)
         const selected = entry.id === selectedId
@@ -110,6 +110,7 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
           x: projection.x,
           y: projection.y,
           ringHidden: projectedRadiusPx(entry.radiusKm, distance, fovY, height) >= RING_HIDE_RADIUS_PX,
+          keepDot: MARKER_PRIORITY[entry.type] >= MARKER_PRIORITY.dwarfPlanet,
         })
         candidates.push({
           id: entry.id,
@@ -125,11 +126,13 @@ export function createMarkerLayer(container: HTMLElement, onSelect: (id: string)
       for (const [id, place] of placed) {
         const el = elements.get(id)
         if (!el) continue
-        if (!visible.has(id)) {
+        const crowded = !visible.has(id)
+        if (crowded && !place.keepDot) {
           el.button.style.display = 'none'
           continue
         }
         el.button.style.display = ''
+        el.button.classList.toggle('label-hidden', crowded)
         el.button.style.transform = `translate(${place.x}px, ${place.y}px)`
         el.button.classList.toggle('ring-hidden', place.ringHidden)
         el.button.style.pointerEvents = place.ringHidden ? 'none' : ''

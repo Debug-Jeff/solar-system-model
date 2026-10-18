@@ -96,6 +96,12 @@
       "medium": "textures/uranus/ring.png",
       "high": "textures/uranus/ring.png",
       "credit": "Generated for this project (procedural)"
+    },
+    "milkyWay": {
+      "low": "textures/sky/milkyway-2048.webp",
+      "medium": "textures/sky/milkyway-4096.webp",
+      "high": "textures/sky/milkyway-8192.webp",
+      "credit": "NASA/Goddard Space Flight Center Scientific Visualization Studio, Deep Star Maps 2020 (Milky Way); Gaia DR2: ESA/Gaia/DPAC"
     }
   }
 }

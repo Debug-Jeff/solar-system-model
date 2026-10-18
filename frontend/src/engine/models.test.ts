@@ -46,3 +46,10 @@ test('a model that cannot be normalised resolves null instead of rejecting', asy
   await expect(models.request('iss', 0.1)).resolves.toBeNull()
   expect(warn).toHaveBeenCalledOnce()
 })
+
+test('a model with a known real size uses it instead of the requested size', async () => {
+  const loader = createModelLoader(async () => box(), { version: 1, models: { eros: { file: 'models/eros.glb', credit: 'NASA', sizeKm: 34.4 } } })
+  const model = await loader.request('eros', 16.8)
+  const size = new THREE.Box3().setFromObject(model!).getSize(new THREE.Vector3())
+  expect(size.x).toBeCloseTo(34.4, 6)
+})

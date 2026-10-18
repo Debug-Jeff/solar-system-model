@@ -1,10 +1,13 @@
 import * as THREE from 'three'
-import { hasEphemeris, heliocentricEcliptic, orbitPath, type EphemerisId } from '../ephemeris'
+import { hasEphemeris, heliocentricEcliptic, orbitPath, orbitPeriodDays, type EphemerisId } from '../ephemeris'
 import type { Body, BodyType } from '../types/body'
 import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered, trackCoverage } from '../ephemeris/moonStore'
 import { onSatellitesRegistered, satelliteOrbit, satelliteOrbitPath, satellitePosition } from '../satellites/store'
 import { isOptionalBody } from './coverage'
 import type { ModelLoader } from './models'
+import { createTrail, isTrailType, trailSamples, type Trail } from './trails'
+import { comaSprite } from './glow'
+import { rockGeometry } from './rocks'
 import { earthOrientation } from './earthOrientation'
 import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
@@ -28,6 +31,10 @@ const COMET_DASH_KM = 5e6
 const COMET_GAP_KM = 3e6
 const SATELLITE_REBUILDS_PER_FRAME = 4
 const MODEL_LOAD_RADII = 400
+const hasModelType = (type: BodyType) => isOptionalBody(type) || type === 'asteroid' || type === 'comet'
+const TRAIL_REBUILDS_PER_FRAME = 8
+const DEFAULT_TRAIL_DAYS = 30
+const DAY_MS = 86_400_000
 
 const _tailDir = new THREE.Vector3()
 const _worldPos = new THREE.Vector3()
@@ -77,6 +84,8 @@ export interface BodyEntry {
   spinRadPerSimHour: number
   oriented: boolean
   model: THREE.Object3D | null
+  trail: Trail | null
+  trailBuiltAtMs: number
   modelRequested: boolean
   radiusKm: number
   semiMajorAxisKm: number
@@ -101,6 +110,14 @@ export interface Bodies {
   moonSystems: MoonSystem[]
   dispose(): void
   getBodyWorldPos(bodyId: string, target: THREE.Vector3): THREE.Vector3
+}
+
+const ORBIT_FADE_START_PX = 4
+const ORBIT_FADE_END_PX = 30
+
+export function orbitFade(bodyRadiusPx: number): number {
+  const t = (bodyRadiusPx - ORBIT_FADE_START_PX) / (ORBIT_FADE_END_PX - ORBIT_FADE_START_PX)
+  return 1 - Math.min(1, Math.max(0, t))
 }
 
 function clamp01(t: number): number {
@@ -247,7 +264,7 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
   }
   switch (body.id) {
     case 'sun':
-      return new THREE.MeshBasicMaterial({ map: textures.sun })
+      return new THREE.MeshBasicMaterial({ map: textures.sun, color: new THREE.Color(1.3, 1.2, 1.05), toneMapped: false })
     case 'earth':
       return buildEarthMaterial(textures)
     case 'venus':
@@ -267,9 +284,10 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
   if (plain) return new THREE.MeshStandardMaterial({ map: plain, roughness: 1 })
   const color = new THREE.Color(body.color || '#999999')
   const params: THREE.MeshStandardMaterialParameters = { color, roughness: 1 }
-  if (body.type === 'comet') {
-    params.emissive = color
-    params.emissiveIntensity = 0.5
+  if (body.type === 'asteroid' || body.type === 'comet') {
+    params.color = new THREE.Color(body.type === 'comet' ? '#5d5650' : '#8c8070')
+    params.flatShading = true
+    params.vertexColors = true
   }
   return new THREE.MeshStandardMaterial(params)
 }
@@ -373,7 +391,9 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     pivot.add(tiltGroup)
 
     const radiusKm = body.type === 'star' ? SUN_RADIUS_KM : body.radiusKm
-    const mesh = isOptionalBody(body.type) ? buildSpacecraftMesh() : new THREE.Mesh(SPHERE_GEOMETRY, buildMaterial(body, textures))
+    const rocky = body.type === 'asteroid' || body.type === 'comet'
+    const mesh = isOptionalBody(body.type) ? buildSpacecraftMesh() : new THREE.Mesh(rocky ? rockGeometry(body.id) : SPHERE_GEOMETRY, buildMaterial(body, textures))
+    if (body.type === 'comet') mesh.add(comaSprite(body.color))
     mesh.scale.setScalar(radiusKm)
     mesh.userData.bodyId = body.id
     if (body.id === 'earth') {
@@ -462,10 +482,16 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       spinRadPerSimHour: spinRadPerSimHour(body.rotationPeriodHours),
       oriented,
       model: null,
+      trail: null,
+      trailBuiltAtMs: Number.NaN,
       modelRequested: false,
       radiusKm,
       semiMajorAxisKm: parentEntry ? (body.distanceFromParentKm ?? 0) : (body.distanceFromSunAU ?? 0) * 149_597_870.7,
       eccentricity: Math.min(Math.max(body.orbitalEccentricity ?? 0, 0), 0.99),
+    }
+    if (isTrailType(body.type)) {
+      entry.trail = createTrail()
+      scene.add(entry.trail.line)
     }
     byId.set(body.id, entry)
     list.push(entry)
@@ -487,6 +513,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   const primaries = planetsData.filter((b) => b.type === 'planet' || b.type === 'dwarfPlanet' || b.type === 'comet' || b.type === 'asteroid')
   const moons = planetsData.filter((b) => b.type === 'moon' || isOptionalBody(b.type))
   let satelliteRebuildBudget = SATELLITE_REBUILDS_PER_FRAME
+  let lastSimTimeMs = initialSimTimeMs
 
   makeEntry(sun, null, 0)
   primaries.forEach((body, i) => makeEntry(body, null, i + 1))
@@ -573,6 +600,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   }
 
   function updateFrame(simTimeMs: number, deltaSimHours: number): void {
+    lastSimTimeMs = simTimeMs
     satelliteRebuildBudget = SATELLITE_REBUILDS_PER_FRAME
     for (const entry of list) {
       if (entry.type !== 'star') {
@@ -612,7 +640,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
   function requestModels(camera: THREE.Camera, selectedId: string | null): void {
     if (!models) return
     for (const entry of list) {
-      if (entry.modelRequested || !isOptionalBody(entry.type) || !entry.pivot.visible || !models.has(entry.id)) continue
+      if (entry.modelRequested || !hasModelType(entry.type) || !entry.pivot.visible || !models.has(entry.id)) continue
       entry.mesh.getWorldPosition(_worldPos)
       if (entry.id !== selectedId && camera.position.distanceTo(_worldPos) > MODEL_LOAD_RADII * entry.radiusKm) continue
       entry.modelRequested = true
@@ -620,13 +648,58 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     }
   }
 
+  function localPositionAt(entry: BodyEntry, utcMs: number): THREE.Vector3 | null {
+    if (entry.type === 'satellite') {
+      const p = satellitePosition(entry.id, utcMs)
+      return p ? eclipticKmVecToScene(p, new THREE.Vector3()) : null
+    }
+    if (entry.type === 'spacecraft') {
+      const p = moonPosition(entry.id, utcMs)
+      return p ? eclipticKmVecToScene(p, new THREE.Vector3()) : null
+    }
+    return entry.ephemerisId ? eclipticKmToScene(heliocentricEcliptic(entry.ephemerisId, utcMs), new THREE.Vector3()) : null
+  }
+
+  function trailSpanMs(entry: BodyEntry): number {
+    if (entry.type === 'satellite') return (satelliteOrbit(entry.id)?.periodMs ?? 0) / 2
+    if (entry.ephemerisId) return (orbitPeriodDays(entry.ephemerisId) * DAY_MS) / 2
+    const period = entry.data.orbitalPeriodDays
+    return (Number.isFinite(period) && period > 0 ? period : DEFAULT_TRAIL_DAYS * 2) * DAY_MS / 2
+  }
+
+  function updateTrail(entry: BodyEntry, visible: boolean, camera: THREE.PerspectiveCamera, viewportHeight: number, budget: { left: number }): void {
+    const trail = entry.trail
+    if (!trail) return
+    if (!visible || !entry.pivot.visible) {
+      trail.line.visible = false
+      return
+    }
+    const span = trailSpanMs(entry)
+    if (!(span > 0)) {
+      trail.line.visible = false
+      return
+    }
+    if (!(Math.abs(lastSimTimeMs - entry.trailBuiltAtMs) < span / 64) && budget.left > 0) {
+      budget.left--
+      trail.setPoints(trailSamples((t) => localPositionAt(entry, t), lastSimTimeMs, span))
+      entry.trailBuiltAtMs = lastSimTimeMs
+    } else if (entry.trailBuiltAtMs === entry.trailBuiltAtMs) {
+      trail.line.visible = true
+    }
+    trail.setResolution(viewportHeight * camera.aspect, viewportHeight)
+    entry.mesh.getWorldPosition(trail.line.position)
+  }
+
   function updateView(camera: THREE.PerspectiveCamera, viewportHeight: number, selectedId: string | null, orbitsOn: boolean): void {
     requestModels(camera, selectedId)
+    const trailBudget = { left: TRAIL_REBUILDS_PER_FRAME }
     const fovY = degToRad(camera.fov)
     for (const entry of list) {
       if (!entry.orbitLine || !entry.orbitMaterial) continue
       const selected = entry.id === selectedId
-      entry.orbitMaterial.opacity = selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity
+      entry.mesh.getWorldPosition(_worldPos)
+      const fade = orbitFade(projectedRadiusPx(entry.radiusKm, camera.position.distanceTo(_worldPos), fovY, viewportHeight))
+      entry.orbitMaterial.opacity = (selected ? ORBIT_OPACITY.selected : entry.orbitBaseOpacity) * fade
       let visible = (orbitsOn || selected) && (!isOptionalBody(entry.type) || entry.trackActive)
       if (visible && entry.parentId && entry.parentId !== 'sun') {
         const parent = byId.get(entry.parentId)
@@ -636,7 +709,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
           visible = selected || moonVisible(px)
         }
       }
-      entry.orbitLine.visible = visible
+      updateTrail(entry, visible, camera, viewportHeight, trailBudget)
+      entry.orbitLine.visible = visible && fade > 0 && !entry.trail
       const heliocentricTrack = entry.type === 'spacecraft' && entry.parentId === 'sun'
       if (!visible || !(entry.ephemerisId || heliocentricTrack)) continue
       entry.pivot.getWorldPosition(_worldPos)
@@ -693,6 +767,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     moonSystems,
     dispose() {
       disposed = true
+      for (const entry of list) entry.trail?.dispose()
       unsubscribeSets()
       unsubscribeSatellites()
     },
