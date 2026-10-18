@@ -8,7 +8,9 @@ import { flyToDistance, followMinDistance } from './flyTo'
 import { createFollowController } from './follow'
 import { createLiveTextureSwitch } from './liveTexture'
 import { createMarkerLayer, moonVisible } from './markers'
-import { coverageActions } from './coverage'
+import { coverageActions, isOptionalBody } from './coverage'
+import { loadSatellites } from '../satellites/loader'
+import { registerSatellites } from '../satellites/store'
 import { clampOutsideSphere } from './pathFix'
 import { projectedRadiusPx } from './projection'
 import { createScene, INITIAL_CAMERA_POSITION } from './scene'
@@ -80,6 +82,9 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   }
 
   requestSet('spacecraft')
+  void loadSatellites({ onUpdate: registerSatellites }).then((file) => {
+    if (file && !disposed) registerSatellites(file)
+  })
 
   function loadMoonSystems(selectedId: string | null, viewportHeight: number): void {
     const fovY = THREE.MathUtils.degToRad(camera.fov)
@@ -187,7 +192,10 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     const height = renderer.domElement.clientHeight
     bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
     loadMoonSystems(state.selectedId, height)
-    const lost = coverageActions(state.selectedId, state.followId, (id) => bodies.byId.get(id)?.type === 'spacecraft' && !bodies.byId.get(id)!.pivot.visible)
+    const lost = coverageActions(state.selectedId, state.followId, (id) => {
+      const entry = bodies.byId.get(id)
+      return entry !== undefined && isOptionalBody(entry.type) && !entry.pivot.visible
+    })
     if (lost.deselect) state.select(null)
     if (lost.stopFollow) state.stopFollow()
     markers.update(bodies.markerEntries, camera, renderer.domElement.clientWidth, height, state.selectedId)
