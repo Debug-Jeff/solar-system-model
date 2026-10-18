@@ -4,6 +4,7 @@ import type { Body, BodyType } from '../types/body'
 import { moonOrbitPath, moonPosition, moonSetFor, onSetRegistered, trackCoverage } from '../ephemeris/moonStore'
 import { onSatellitesRegistered, satelliteOrbit, satelliteOrbitPath, satellitePosition } from '../satellites/store'
 import { isOptionalBody } from './coverage'
+import type { ModelLoader } from './models'
 import { earthOrientation } from './earthOrientation'
 import { eclipticKmToScene, eclipticKmVecToScene } from './frames'
 import { keplerianPosition, ellipsePoints } from './orbit'
@@ -26,6 +27,7 @@ const TAIL_MAX_KM = 6e7
 const COMET_DASH_KM = 5e6
 const COMET_GAP_KM = 3e6
 const SATELLITE_REBUILDS_PER_FRAME = 4
+const MODEL_LOAD_RADII = 400
 
 const _tailDir = new THREE.Vector3()
 const _worldPos = new THREE.Vector3()
@@ -74,6 +76,8 @@ export interface BodyEntry {
   angularSpeedPerSimHour: number
   spinRadPerSimHour: number
   oriented: boolean
+  model: THREE.Object3D | null
+  modelRequested: boolean
   radiusKm: number
   semiMajorAxisKm: number
   eccentricity: number
@@ -341,7 +345,8 @@ function rebuildOrbit(entry: BodyEntry, simTimeMs: number): void {
   writeOrbitBuffer(entry, entry.ephemerisId ? new THREE.Vector3() : entry.orbitOrigin.set(0, 0, 0))
 }
 
-export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: Textures, initialSimTimeMs: number): Bodies {
+export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: Textures, initialSimTimeMs: number, models?: ModelLoader): Bodies {
+  let disposed = false
   const byId = new Map<string, BodyEntry>()
   const list: BodyEntry[] = []
   const raycastTargets: THREE.Mesh[] = []
@@ -456,6 +461,8 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
           : ((body.retrograde ? -1 : 1) * (2 * Math.PI)) / (body.orbitalPeriodDays * 24),
       spinRadPerSimHour: spinRadPerSimHour(body.rotationPeriodHours),
       oriented,
+      model: null,
+      modelRequested: false,
       radiusKm,
       semiMajorAxisKm: parentEntry ? (body.distanceFromParentKm ?? 0) : (body.distanceFromSunAU ?? 0) * 149_597_870.7,
       eccentricity: Math.min(Math.max(body.orbitalEccentricity ?? 0, 0), 0.99),
@@ -594,7 +601,27 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     })
   }
 
+  function attachModel(entry: BodyEntry, model: THREE.Object3D | null): void {
+    if (!model || disposed) return
+    entry.model = model
+    entry.mesh.parent?.add(model)
+    ;(entry.mesh.material as THREE.Material).visible = false
+    for (const child of entry.mesh.children) child.visible = false
+  }
+
+  function requestModels(camera: THREE.Camera, selectedId: string | null): void {
+    if (!models) return
+    for (const entry of list) {
+      if (entry.modelRequested || !isOptionalBody(entry.type) || !entry.pivot.visible || !models.has(entry.id)) continue
+      entry.mesh.getWorldPosition(_worldPos)
+      if (entry.id !== selectedId && camera.position.distanceTo(_worldPos) > MODEL_LOAD_RADII * entry.radiusKm) continue
+      entry.modelRequested = true
+      void models.request(entry.id, entry.radiusKm * 2).then((model) => attachModel(entry, model))
+    }
+  }
+
   function updateView(camera: THREE.PerspectiveCamera, viewportHeight: number, selectedId: string | null, orbitsOn: boolean): void {
+    requestModels(camera, selectedId)
     const fovY = degToRad(camera.fov)
     for (const entry of list) {
       if (!entry.orbitLine || !entry.orbitMaterial) continue
@@ -665,6 +692,7 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
     updateView,
     moonSystems,
     dispose() {
+      disposed = true
       unsubscribeSets()
       unsubscribeSatellites()
     },

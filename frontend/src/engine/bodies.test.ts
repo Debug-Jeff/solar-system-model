@@ -266,3 +266,32 @@ test('Earth wears an additive atmosphere shell just above the surface', () => {
   expect(material.fragmentShader).toContain('logdepthbuf_fragment')
   bodies.dispose()
 })
+
+import { createModelLoader } from './models'
+
+test('a craft swaps in its model when the camera comes close, and stays pickable', async () => {
+  resetSatellites()
+  registerSatellites(satFile)
+  const t = issEpochMs + 3_600_000
+  const fakeModel = () => new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1), new THREE.MeshStandardMaterial())
+  const models = createModelLoader(async () => fakeModel(), { version: 1, models: { iss: { file: 'models/iss.glb', credit: 'NASA 3D Resources' } } })
+  const bodies = createBodies(new THREE.Scene(), [...data, satBody('iss')], textures, t, models)
+  bodies.updateFrame(t, 0)
+  const iss = bodies.byId.get('iss')!
+  const cam = new THREE.PerspectiveCamera(45, 2, 0.001, 1e11)
+  const place = (distanceKm: number) => {
+    cam.position.copy(bodies.getBodyWorldPos('iss', new THREE.Vector3())).add(new THREE.Vector3(0, 0, distanceKm))
+    cam.updateMatrixWorld()
+    bodies.updateView(cam, 800, null, true)
+  }
+  place(1e5)
+  await Promise.resolve()
+  expect(iss.model).toBeNull()
+  place(2)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(iss.model).not.toBeNull()
+  expect(iss.model!.parent).toBe(iss.mesh.parent)
+  expect((iss.mesh.material as THREE.Material).visible).toBe(false)
+  expect(bodies.raycastTargets).toContain(iss.mesh)
+  bodies.dispose()
+})

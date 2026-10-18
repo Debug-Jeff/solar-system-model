@@ -21,6 +21,7 @@ import { createScene, INITIAL_CAMERA_POSITION } from './scene'
 import type { SmallBodiesData } from '../ephemeris/smallBodies'
 import { createKeplerBelt } from './belts'
 import { createTapDetector } from './tap'
+import { createModelLoader, gltfLoad } from './models'
 import { browserQualityEnv, detectQuality, QUALITY } from './quality'
 import { createTextures, loadLiveEarthTexture } from './textures'
 
@@ -53,7 +54,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
   const parts = createScene(canvas, quality)
   const { scene, camera, renderer, controls } = parts
 
-  const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs)
+  const bodies = createBodies(scene, store.getState().bodies, textures, store.getState().simTimeMs, createModelLoader(gltfLoad()))
   const markers = createMarkerLayer(labelsLayer, (id) => store.getState().select(id))
   const belts = smallBodies
     ? [createKeplerBelt(scene, smallBodies.belts.main, 0xd8c6a4, 2), createKeplerBelt(scene, smallBodies.belts.kuiper, 0x9fb6d4, 2)]
