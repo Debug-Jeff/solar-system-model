@@ -23,6 +23,7 @@ export interface Textures {
   saturn: { map: THREE.Texture; ring: THREE.Texture }
   uranus: { map: THREE.Texture; ring: THREE.Texture }
   neptune: THREE.Texture
+  milkyWay: THREE.Texture
 }
 
 export interface TextureLoadingCallbacks {
@@ -73,6 +74,7 @@ export function createTextures(tier: QualityTier, { onProgress, onDone }: Textur
     saturn: { map: color('saturn'), ring: color('saturnRing') },
     uranus: { map: color('uranus'), ring: color('uranusRing') },
     neptune: color('neptune'),
+    milkyWay: color('milkyWay'),
   }
 }
 

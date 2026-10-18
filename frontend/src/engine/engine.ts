@@ -11,6 +11,7 @@ import { createMarkerLayer, moonVisible } from './markers'
 import { loadShowers } from '../meteors/showers'
 import { createMeteorStreams, type MeteorStreams } from './meteorStreams'
 import { loadSky } from '../sky/sky'
+import { createMilkyWay } from './milkyWay'
 import { createSky, type Sky } from './sky'
 import { coverageActions, isOptionalBody } from './coverage'
 import { loadSatellites } from '../satellites/loader'
@@ -101,6 +102,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
 
   requestSet('spacecraft')
   let sky: Sky | null = null
+  const milkyWay = createMilkyWay(scene, textures.milkyWay)
   let streams: MeteorStreams | null = null
   void loadShowers().then((showers) => {
     if (!showers || disposed) return
@@ -222,6 +224,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
     keepOutsideBodies(state.followId)
     camera.updateMatrixWorld()
     sky?.update(camera)
+    milkyWay.update(camera)
 
     const height = renderer.domElement.clientHeight
     bodies.updateView(camera, height, state.selectedId, state.layers.orbits)
@@ -254,6 +257,7 @@ export function createEngine({ canvas, labelsLayer, store, smallBodies }: Engine
       belts.forEach((belt) => belt.dispose())
       bodies.dispose()
       sky?.dispose()
+      milkyWay.dispose()
       streams?.dispose()
       parts.dispose()
     },
