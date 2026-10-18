@@ -6,14 +6,18 @@ export interface SpacecraftInfo {
   parent: 'sun' | 'earth' | 'mars' | 'jupiter'
   distanceFromParentKm: number
   periodDays?: number
+  sizeM?: number
   launched: string
   mission: string
   facts: string[]
 }
 
+const DEFAULT_SIZE_M = 20
+
 export const SPACECRAFT: SpacecraftInfo[] = [
   {
     id: 'parker',
+    sizeM: 3,
     name: 'Parker Solar Probe',
     parent: 'sun',
     distanceFromParentKm: 0,
@@ -50,6 +54,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
   },
   {
     id: 'voyager-1',
+    sizeM: 13,
     name: 'Voyager 1',
     parent: 'sun',
     distanceFromParentKm: 0,
@@ -59,6 +64,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
   },
   {
     id: 'voyager-2',
+    sizeM: 13,
     name: 'Voyager 2',
     parent: 'sun',
     distanceFromParentKm: 0,
@@ -77,6 +83,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
   },
   {
     id: 'osiris-apex',
+    sizeM: 6.2,
     name: 'OSIRIS-APEX',
     parent: 'sun',
     distanceFromParentKm: 0,
@@ -122,6 +129,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
   },
   {
     id: 'jwst',
+    sizeM: 21,
     name: 'James Webb Space Telescope',
     parent: 'earth',
     distanceFromParentKm: 1_500_000,
@@ -131,6 +139,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
   },
   {
     id: 'mro',
+    sizeM: 13.6,
     name: 'Mars Reconnaissance Orbiter',
     parent: 'mars',
     distanceFromParentKm: 3700,
@@ -141,6 +150,7 @@ export const SPACECRAFT: SpacecraftInfo[] = [
   },
   {
     id: 'juno-probe',
+    sizeM: 20,
     name: 'Juno',
     parent: 'jupiter',
     distanceFromParentKm: 4_500_000,
@@ -157,7 +167,7 @@ export function spacecraftRecords(): Body[] {
     name: c.name,
     type: 'spacecraft',
     parent: c.parent,
-    radiusKm: 0.01,
+    radiusKm: (c.sizeM ?? DEFAULT_SIZE_M) / 2000,
     distanceFromParentKm: c.distanceFromParentKm,
     orbitalPeriodDays: c.periodDays ?? Number.NaN,
     rotationPeriodHours: 0,

@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "models": {
+    "parker": {
+      "file": "models/parker-solar-probe.glb",
+      "source": "NASA-3D-Resources/3D Models/Parker Solar Probe/Parker Solar Probe.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "voyager-1": {
+      "file": "models/voyager-probe-a.glb",
+      "source": "NASA-3D-Resources/3D Models/Voyager Probe (A)/Voyager Probe (A).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "voyager-2": {
+      "file": "models/voyager-probe-a.glb",
+      "source": "NASA-3D-Resources/3D Models/Voyager Probe (A)/Voyager Probe (A).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "osiris-apex": {
+      "file": "models/origins-spectral-interpretation-resource-identification-and-security-regolith-explorer-osiris-rex.glb",
+      "source": "NASA-3D-Resources/3D Models/Origins, Spectral Interpretation, Resource Identification, and Security - Regolith Explorer (OSIRIS-REx)/OSIRIS-REx.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "jwst": {
+      "file": "models/james-webb-space-telescope-b.glb",
+      "source": "NASA-3D-Resources/3D Models/James Webb Space Telescope (B)/James Webb Space Telescope (B).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "mro": {
+      "file": "models/mars-reconnaissance-orbiter-mro-c.glb",
+      "source": "NASA-3D-Resources/3D Models/Mars Reconnaissance Orbiter (MRO) (C)/Mars Reconnaissance Orbiter (MRO) (C).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "juno-probe": {
+      "file": "models/juno-b.glb",
+      "source": "NASA-3D-Resources/3D Models/Juno (B)/Juno (B).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "iss": {
+      "file": "models/international-space-station-iss-b.glb",
+      "source": "NASA-3D-Resources/3D Models/International Space Station (ISS) (B)/International Space Station (ISS) (B).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "hubble": {
+      "file": "models/hubble-space-telescope-a.glb",
+      "source": "NASA-3D-Resources/3D Models/Hubble Space Telescope (A)/Hubble Space Telescope (A).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "chandra": {
+      "file": "models/chandra-x-ray-observatory.glb",
+      "source": "NASA-3D-Resources/3D Models/Chandra X-ray Observatory/Chandra X-ray Observatory.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "swift": {
+      "file": "models/swift.glb",
+      "source": "NASA-3D-Resources/3D Models/Swift/Swift.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "aqua": {
+      "file": "models/aqua-b.glb",
+      "source": "NASA-3D-Resources/3D Models/Aqua (B)/Aqua (B).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "aura": {
+      "file": "models/aura-a.glb",
+      "source": "NASA-3D-Resources/3D Models/Aura (A)/Aura (A).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "landsat-8": {
+      "file": "models/landsat-8.glb",
+      "source": "NASA-3D-Resources/3D Models/Landsat 8/Landsat 8.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "landsat-9": {
+      "file": "models/landsat-8.glb",
+      "source": "NASA-3D-Resources/3D Models/Landsat 8/Landsat 8.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "sentinel-6a": {
+      "file": "models/jason-continuity-of-service-sentinel-6.glb",
+      "source": "NASA-3D-Resources/3D Models/Jason Continuity of Service (Sentinel-6)/Jason Continuity of Service (Sentinel-6).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "suomi-npp": {
+      "file": "models/suomi-national-polar-orbiting-partnership-suomi-npp.glb",
+      "source": "NASA-3D-Resources/3D Models/Suomi National Polar-orbiting Partnership (Suomi NPP)/Suomi National Polar-orbiting Partnership (Suomi NPP).glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "goes-16": {
+      "file": "models/geostationary-operational-environmental-satellites.glb",
+      "source": "NASA-3D-Resources/3D Models/Geostationary Operational Environmental Satellites/Geostationary Operational Environmental Satellites.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "goes-18": {
+      "file": "models/geostationary-operational-environmental-satellites.glb",
+      "source": "NASA-3D-Resources/3D Models/Geostationary Operational Environmental Satellites/Geostationary Operational Environmental Satellites.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    },
+    "goes-19": {
+      "file": "models/geostationary-operational-environmental-satellites.glb",
+      "source": "NASA-3D-Resources/3D Models/Geostationary Operational Environmental Satellites/Geostationary Operational Environmental Satellites.glb",
+      "credit": "NASA 3D Resources (free and without copyright; used under NASA media usage guidelines, no endorsement implied)"
+    }
+  }
+}

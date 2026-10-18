@@ -18,6 +18,10 @@
 - Constellation lines: [ConstellationLines](https://github.com/MarcvdSluys/ConstellationLines) by Marc van der Sluys ([doi:10.5281/zenodo.10397192](https://doi.org/10.5281/zenodo.10397192)), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Converted from HR-number polylines to pairs of indices into the star list in `frontend/public/data/sky.json`; the line figures themselves are unchanged.
 - [NASA APOD](https://apod.nasa.gov), [DSCOVR EPIC](https://epic.gsfc.nasa.gov) and [NASA GIBS](https://www.earthdata.nasa.gov/gibs) — imagery via api.nasa.gov.
 
+## 3D models
+
+Spacecraft and satellite models come from [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources), which are free and without copyright. They're used under [NASA's media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media), and no endorsement by NASA is implied. Each model is compressed by `frontend/scripts/build-models.mjs`, and its source path is listed in `frontend/public/models/manifest.json`.
+
 ## Textures
 
 All planet and moon maps are public-domain NASA, JPL and USGS imagery, resized and converted to WebP by `frontend/scripts/build-textures.mjs`:
