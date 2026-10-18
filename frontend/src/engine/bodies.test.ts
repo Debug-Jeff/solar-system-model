@@ -10,8 +10,8 @@ import type { Textures } from './textures'
 
 const tex = () => new THREE.Texture()
 const textures: Textures = {
-  sun: tex(), mercury: tex(), venus: { surface: tex(), atmosphere: tex() },
-  earth: { day: tex(), night: tex(), clouds: tex(), normal: tex(), specular: tex() },
+  sun: tex(), mercury: tex(), venus: { clouds: tex() },
+  earth: { day: tex(), night: tex(), clouds: tex(), specular: tex() },
   moon: { map: tex(), bump: tex() }, mars: tex(), jupiter: tex(),
   saturn: { map: tex(), ring: tex() }, uranus: { map: tex(), ring: tex() }, neptune: tex(),
 }
@@ -236,5 +236,30 @@ test('at most four satellite orbits rebuild in one frame after a time jump', () 
   expect(rebuilt()).toBe(4)
   bodies.updateFrame(t1, 0)
   expect(rebuilt()).toBe(6)
+  bodies.dispose()
+})
+
+test('Earth city lights are masked to the night side by the Sun direction', () => {
+  const bodies = createBodies(new THREE.Scene(), data, textures, inside)
+  const material = bodies.byId.get('earth')!.mesh.material as THREE.MeshPhongMaterial
+  const shader = { vertexShader: THREE.ShaderLib.phong.vertexShader, fragmentShader: THREE.ShaderLib.phong.fragmentShader, uniforms: {} } as unknown as THREE.WebGLProgramParametersWithUniforms
+  material.onBeforeCompile(shader, {} as THREE.WebGLRenderer)
+  expect(shader.fragmentShader.match(/nightMask/g)?.length).toBeGreaterThanOrEqual(2)
+  expect(shader.fragmentShader).toContain('1.0 - smoothstep(-0.25, 0.1,')
+  expect(shader.fragmentShader.match(/#include <emissivemap_fragment>/g)).toHaveLength(1)
+  expect(material.customProgramCacheKey()).toContain('night')
+  expect(material.normalMap).toBeNull()
+  bodies.dispose()
+})
+
+test('Earth wears an additive atmosphere shell just above the surface', () => {
+  const bodies = createBodies(new THREE.Scene(), data, textures, inside)
+  const shell = bodies.byId.get('earth')!.extraMeshes.find((e) => e.mesh.material instanceof THREE.ShaderMaterial)!
+  expect(shell).toBeDefined()
+  expect(shell.radiusMultiplier).toBeCloseTo(1.025, 6)
+  const material = shell.mesh.material as THREE.ShaderMaterial
+  expect(material.blending).toBe(THREE.AdditiveBlending)
+  expect(material.depthWrite).toBe(false)
+  expect(material.fragmentShader).toContain('logdepthbuf_fragment')
   bodies.dispose()
 })

@@ -159,6 +159,78 @@ function buildSpacecraftMesh(): THREE.Mesh {
   return bus
 }
 
+const NIGHT_MASK = `#include <emissivemap_fragment>
+#if NUM_POINT_LIGHTS > 0
+  float nightMask = 1.0 - smoothstep(-0.25, 0.1, dot(normal, normalize(pointLights[0].position + vViewPosition)));
+  totalEmissiveRadiance *= nightMask;
+#endif`
+
+function buildEarthMaterial(textures: Textures): THREE.MeshPhongMaterial {
+  const material = new THREE.MeshPhongMaterial({
+    map: textures.earth.day,
+    specularMap: textures.earth.specular,
+    specular: new THREE.Color(0x333333),
+    shininess: 12,
+    emissiveMap: textures.earth.night,
+    emissive: new THREE.Color(0xffd9a0),
+    emissiveIntensity: 1.4,
+  })
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', NIGHT_MASK)
+  }
+  material.customProgramCacheKey = () => 'earth-night-mask'
+  return material
+}
+
+const ATMOSPHERE_VERTEX = /* glsl */ `
+#include <common>
+#include <logdepthbuf_pars_vertex>
+varying vec3 vNormal;
+varying vec3 vView;
+void main() {
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vNormal = normalize(normalMatrix * normal);
+  vView = -mv.xyz;
+  gl_Position = projectionMatrix * mv;
+  #include <logdepthbuf_vertex>
+}
+`
+
+const ATMOSPHERE_FRAGMENT = /* glsl */ `
+#include <common>
+#include <logdepthbuf_pars_fragment>
+uniform vec3 uSunView;
+uniform vec3 uColor;
+varying vec3 vNormal;
+varying vec3 vView;
+void main() {
+  #include <logdepthbuf_fragment>
+  vec3 n = normalize(vNormal);
+  float rim = pow(1.0 - abs(dot(n, normalize(vView))), 3.0);
+  float day = clamp(dot(n, normalize(uSunView + vView)) * 0.6 + 0.5, 0.12, 1.0);
+  gl_FragColor = vec4(uColor * rim * day * 1.6, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}
+`
+
+function buildAtmosphere(): THREE.Mesh {
+  const uniforms = { uSunView: { value: new THREE.Vector3() }, uColor: { value: new THREE.Color(0x6fb1ff) } }
+  const material = new THREE.ShaderMaterial({
+    vertexShader: ATMOSPHERE_VERTEX,
+    fragmentShader: ATMOSPHERE_FRAGMENT,
+    uniforms,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  })
+  const mesh = new THREE.Mesh(SPHERE_GEOMETRY, material)
+  mesh.onBeforeRender = (_renderer, _scene, camera) => {
+    uniforms.uSunView.value.set(0, 0, 0).applyMatrix4(camera.matrixWorldInverse)
+  }
+  return mesh
+}
+
 function buildMaterial(body: Body, textures: Textures): THREE.Material {
   const plainMaps: Partial<Record<string, THREE.Texture>> = {
     mercury: textures.mercury,
@@ -170,18 +242,9 @@ function buildMaterial(body: Body, textures: Textures): THREE.Material {
     case 'sun':
       return new THREE.MeshBasicMaterial({ map: textures.sun })
     case 'earth':
-      return new THREE.MeshPhongMaterial({
-        map: textures.earth.day,
-        normalMap: textures.earth.normal,
-        specularMap: textures.earth.specular,
-        specular: new THREE.Color(0x333333),
-        shininess: 12,
-        emissiveMap: textures.earth.night,
-        emissive: new THREE.Color(0xffffff),
-        emissiveIntensity: 1.1,
-      })
+      return buildEarthMaterial(textures)
     case 'venus':
-      return new THREE.MeshStandardMaterial({ map: textures.venus.atmosphere, roughness: 1 })
+      return new THREE.MeshStandardMaterial({ map: textures.venus.clouds, roughness: 1 })
     case 'moon':
       return new THREE.MeshStandardMaterial({
         map: textures.moon.map,
@@ -323,6 +386,9 @@ export function createBodies(scene: THREE.Scene, planetsData: Body[], textures: 
       )
       tiltGroup.add(clouds)
       extraMeshes.push({ mesh: clouds, radiusMultiplier: 1.004, spinFactor: 1.15, driftRad: 0 })
+      const atmosphere = buildAtmosphere()
+      tiltGroup.add(atmosphere)
+      extraMeshes.push({ mesh: atmosphere, radiusMultiplier: 1.025, spinFactor: 1, driftRad: 0 })
     }
     if (isRinged(body.id)) {
       const ring = buildRing(body.id, textures)
